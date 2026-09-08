@@ -6,14 +6,15 @@ import { httpLogger, requestId } from './middleware/requestContext.js';
 import { notFound } from './middleware/notFound.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { healthRouter } from './modules/health/health.routes.js';
+import { authRouter } from './modules/auth/auth.routes.js';
 
 /**
  * Builds and configures the Express application.
  *
  * Kept separate from server startup (see server.ts) so tests can import a fully
  * wired app without opening a network port or connecting to real services.
- * Middleware order matters: security headers → CORS → body parsing → request
- * context/logging → routes → 404 → centralized error handler (always last).
+ * Middleware order matters: security headers -> CORS -> body parsing ->
+ * request context/logging -> routes -> 404 -> centralized error handler (last).
  */
 export function createApp(): Application {
   const app = express();
@@ -36,6 +37,7 @@ export function createApp(): Application {
 
   // Feature routers mount under /api. More modules will be added in later phases.
   app.use('/api/health', healthRouter);
+  app.use('/api/auth', authRouter);
 
   // Unmatched routes and centralized error handling come last.
   app.use(notFound);
