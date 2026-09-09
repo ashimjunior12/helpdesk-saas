@@ -2,12 +2,13 @@ import type { FilterQuery } from 'mongoose';
 import { AppError } from '../../utils/AppError.js';
 import { logger } from '../../utils/logger.js';
 import { SOCKET_EVENTS, emitToUser } from '../../sockets/registry.js';
+import { isQueueEnabled } from '../../config/redis.js';
+import { enqueueNotification, type NotificationJobData } from '../../queues/notifications.queue.js';
 import type { TicketDocument } from '../tickets/ticket.model.js';
 import {
   NotificationModel,
   type Notification,
   type NotificationDocument,
-  type NotificationType,
 } from './notification.model.js';
 import type { ListNotificationsQuery } from './notifications.validation.js';
 
@@ -18,27 +19,38 @@ interface ListResult {
   limit: number;
 }
 
-interface CreateParams {
-  organizationId: string;
-  userId: string;
-  type: NotificationType;
-  title: string;
-  body?: string;
-  ticketId?: string;
-  ticketNumber?: number;
+// Persists a notification and pushes it live to the recipient. This is the unit
+// of work run either inline or by the BullMQ worker.
+export async function createNotificationRecord(data: NotificationJobData): Promise<void> {
+  const notification = await NotificationModel.create({
+    organizationId: data.organizationId,
+    userId: data.userId,
+    type: data.type,
+    title: data.title,
+    body: data.body,
+    ticketId: data.ticketId ?? null,
+    ticketNumber: data.ticketNumber ?? null,
+  });
+  emitToUser(data.userId, SOCKET_EVENTS.NOTIFICATION_CREATED, notification.toJSON());
 }
 
-async function createNotification(params: CreateParams): Promise<void> {
-  const notification = await NotificationModel.create({
-    organizationId: params.organizationId,
-    userId: params.userId,
-    type: params.type,
-    title: params.title,
-    body: params.body,
-    ticketId: params.ticketId ?? null,
-    ticketNumber: params.ticketNumber ?? null,
-  });
-  emitToUser(params.userId, SOCKET_EVENTS.NOTIFICATION_CREATED, notification.toJSON());
+// Routes notification work to the queue when Redis is configured, otherwise runs
+// it inline. If enqueueing fails (Redis configured but unreachable), it falls
+// back to inline so a notification is never silently lost.
+async function dispatchNotification(data: NotificationJobData): Promise<void> {
+  if (isQueueEnabled()) {
+    try {
+      if (await enqueueNotification(data)) {
+        return;
+      }
+    } catch (err) {
+      logger.warn(
+        { operation: 'notifications.enqueue', err },
+        'Notification queue unavailable; creating inline',
+      );
+    }
+  }
+  await createNotificationRecord(data);
 }
 
 // The recipient of a ticket notification is its assigned agent, never the person
@@ -62,7 +74,7 @@ export function notifyTicketAssigned(ticket: TicketDocument, actorUserId: string
   const userId = recipientFor(ticket, actorUserId);
   if (!userId) return Promise.resolve();
   return safeNotify(() =>
-    createNotification({
+    dispatchNotification({
       organizationId: String(ticket.organizationId),
       userId,
       type: 'TICKET_ASSIGNED',
@@ -78,7 +90,7 @@ export function notifyTicketMessage(ticket: TicketDocument, actorUserId: string)
   const userId = recipientFor(ticket, actorUserId);
   if (!userId) return Promise.resolve();
   return safeNotify(() =>
-    createNotification({
+    dispatchNotification({
       organizationId: String(ticket.organizationId),
       userId,
       type: 'TICKET_MESSAGE',
@@ -94,7 +106,7 @@ export function notifyTicketStatus(ticket: TicketDocument, actorUserId: string):
   const userId = recipientFor(ticket, actorUserId);
   if (!userId) return Promise.resolve();
   return safeNotify(() =>
-    createNotification({
+    dispatchNotification({
       organizationId: String(ticket.organizationId),
       userId,
       type: 'TICKET_STATUS',
