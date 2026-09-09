@@ -1,11 +1,10 @@
-import bcrypt from 'bcryptjs';
 import { AppError } from '../../utils/AppError.js';
 import { logger } from '../../utils/logger.js';
 import { UserModel, type UserDocument } from './user.model.js';
+import { hashPassword, verifyPassword } from './password.js';
 import { issueTokenPair, verifyRefreshToken, type AuthenticatedUser } from './token.service.js';
 import type { LoginInput, RegisterInput } from './auth.validation.js';
 
-const BCRYPT_ROUNDS = 12;
 const MONGO_DUPLICATE_KEY = 11000;
 
 interface AuthResult {
@@ -29,7 +28,7 @@ function toAuthResult(user: UserDocument): AuthResult {
 }
 
 export async function registerUser(input: RegisterInput): Promise<AuthResult> {
-  const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
+  const passwordHash = await hashPassword(input.password);
 
   try {
     const user = await UserModel.create({
@@ -53,10 +52,13 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
   // Compare even when the user is missing so response timing does not reveal
   // whether an email exists.
   const hash = user?.passwordHash ?? DUMMY_HASH;
-  const passwordMatches = await bcrypt.compare(input.password, hash);
+  const passwordMatches = await verifyPassword(input.password, hash);
 
   if (!user || !passwordMatches) {
     throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
+  }
+  if (!user.isActive) {
+    throw new AppError(403, 'ACCOUNT_DISABLED', 'This account has been disabled');
   }
 
   logger.info({ operation: 'auth.login', userId: user.id }, 'User logged in');
@@ -69,6 +71,9 @@ export async function refreshTokens(refreshToken: string): Promise<AuthResult> {
   const user = await UserModel.findById(userId);
   if (!user) {
     throw AppError.unauthorized('Invalid refresh token');
+  }
+  if (!user.isActive) {
+    throw new AppError(403, 'ACCOUNT_DISABLED', 'This account has been disabled');
   }
 
   return toAuthResult(user);

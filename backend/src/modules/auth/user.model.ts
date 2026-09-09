@@ -10,6 +10,7 @@ export interface User {
   // Null until the user creates or joins an organization (Phase 2).
   organizationId: Types.ObjectId | null;
   role: UserRole | null;
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,6 +47,10 @@ const userSchema = new Schema<User>(
       type: String,
       enum: USER_ROLES,
       default: null,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
     },
   },
   {
