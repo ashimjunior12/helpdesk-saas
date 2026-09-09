@@ -2,6 +2,7 @@ import type { Server } from 'node:http';
 import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
+import { initRealtime } from './sockets/index.js';
 import { logger } from './utils/logger.js';
 
 /**
@@ -19,6 +20,9 @@ async function start(): Promise<void> {
       `Server listening on http://localhost:${env.PORT}`,
     );
   });
+
+  // Attach the Socket.IO server to the same HTTP server for real-time events.
+  initRealtime(server);
 
   setupGracefulShutdown(server);
 }
