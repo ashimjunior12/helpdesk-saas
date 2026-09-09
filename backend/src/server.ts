@@ -3,6 +3,8 @@ import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
 import { initRealtime } from './sockets/index.js';
+import { startWorkers, stopWorkers } from './queues/startWorkers.js';
+import { closeNotificationsQueue } from './queues/notifications.queue.js';
 import { logger } from './utils/logger.js';
 
 /**
@@ -24,6 +26,9 @@ async function start(): Promise<void> {
   // Attach the Socket.IO server to the same HTTP server for real-time events.
   initRealtime(server);
 
+  // Start background job workers (no-op when REDIS_URL is not configured).
+  startWorkers();
+
   setupGracefulShutdown(server);
 }
 
@@ -36,6 +41,8 @@ function setupGracefulShutdown(server: Server): void {
   const shutdown = (signal: string) => {
     logger.info({ operation: 'server.shutdown', signal }, 'Shutting down');
     server.close(async () => {
+      await stopWorkers();
+      await closeNotificationsQueue();
       await disconnectDatabase();
       process.exit(0);
     });
