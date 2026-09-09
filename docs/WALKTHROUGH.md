@@ -357,3 +357,99 @@ curl -s -X DELETE http://localhost:4000/api/customers/<customerId> -H "Authoriza
 ```
 
 `204` on success; `403 FORBIDDEN` for an AGENT; `404` for another tenant's customer.
+
+---
+
+## Phase 5 — Tickets
+
+**What / why.** A ticket is a support request: it links a customer to a status,
+priority, and (optionally) an assigned agent and team, so the org can track and
+route support work. This is the core entity of the product.
+
+**Business logic.**
+- New tickets start `OPEN` and get a per-organization sequential `number`
+  (#1, #2, ...) via an atomic counter, alongside their internal id.
+- Status follows a state machine; invalid transitions are rejected
+  (`409 INVALID_STATUS_TRANSITION`):
+  `OPEN -> PENDING|RESOLVED|CLOSED`, `PENDING -> OPEN|RESOLVED|CLOSED`,
+  `RESOLVED -> OPEN|CLOSED`, `CLOSED -> OPEN` (reopen).
+- Priority is one of `LOW|MEDIUM|HIGH|URGENT` (default `MEDIUM`).
+- Linked ids are tenant-checked: the `customerId`, `assignedAgentId` (must be an
+  active member), and `teamId` must all belong to the caller's organization,
+  otherwise `404`.
+- Read/list is open to any role; create/update/status/assign to any role;
+  delete to `ADMIN` or `MANAGER`.
+- The threaded conversation on a ticket comes in Phase 6; here a ticket carries
+  only an optional initial `description`.
+
+All endpoints require `Authorization: Bearer <access token with org context>`.
+
+### Create (any role)
+
+```bash
+ADMIN="<org-scoped access token>"
+curl -s -X POST http://localhost:4000/api/tickets \
+  -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
+  -d '{"subject":"Cannot log in","description":"500 on login","priority":"HIGH","customerId":"<customerId>"}'
+```
+
+`201` with the ticket (`number`, `status:"OPEN"`, ...). `404` if the customer /
+assignee / team is outside the org; `400` for invalid input.
+
+### List / filter / search / paginate (any role)
+
+```bash
+curl -s "http://localhost:4000/api/tickets?status=OPEN&priority=HIGH&assignedAgentId=<id>&search=login&page=1&limit=20" \
+  -H "Authorization: Bearer $ADMIN"
+```
+
+Returns `{ tickets: [...], pagination: { page, limit, total, totalPages } }`.
+Filters: `status`, `priority`, `assignedAgentId`, `customerId`, `teamId`;
+`search` matches the subject.
+
+### Get / update content (any role)
+
+```bash
+curl -s http://localhost:4000/api/tickets/<ticketId> -H "Authorization: Bearer $ADMIN"
+
+curl -s -X PATCH http://localhost:4000/api/tickets/<ticketId> \
+  -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
+  -d '{"priority":"URGENT","category":"auth"}'
+```
+
+`PATCH` updates content fields only (`subject`, `description`, `priority`,
+`category`) - status and assignment have dedicated endpoints below.
+
+### Change status (any role, transition-validated)
+
+```bash
+curl -s -X POST http://localhost:4000/api/tickets/<ticketId>/status \
+  -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
+  -d '{"status":"RESOLVED"}'
+```
+
+`409 INVALID_STATUS_TRANSITION` if the move is not allowed from the current status.
+
+### Assign / unassign (any role)
+
+```bash
+# Assign an agent and/or team
+curl -s -X POST http://localhost:4000/api/tickets/<ticketId>/assign \
+  -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
+  -d '{"assignedAgentId":"<userId>","teamId":"<teamId>"}'
+
+# Clear an assignment with null
+curl -s -X POST http://localhost:4000/api/tickets/<ticketId>/assign \
+  -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
+  -d '{"assignedAgentId":null}'
+```
+
+`404` if the agent/team is outside the org.
+
+### Delete (ADMIN or MANAGER)
+
+```bash
+curl -s -X DELETE http://localhost:4000/api/tickets/<ticketId> -H "Authorization: Bearer $ADMIN"
+```
+
+`204` on success; `403 FORBIDDEN` for an AGENT; `404` for another tenant's ticket.
