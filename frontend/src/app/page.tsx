@@ -3,7 +3,7 @@ import { fetchHealth } from '@/lib/api';
 /**
  * Foundation landing page. Server-side fetches the backend health endpoint to
  * prove the frontend/backend wiring works end to end. This is placeholder UI
- * for Phase 0 — real product screens come in later phases.
+ * for Phase 0 - real product screens come in later phases.
  */
 export default async function HomePage() {
   const health = await fetchHealth();
@@ -12,7 +12,7 @@ export default async function HomePage() {
   return (
     <main style={{ maxWidth: 640, margin: '0 auto', padding: '4rem 1.5rem' }}>
       <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Helpdesk SaaS</h1>
-      <p style={{ opacity: 0.7, marginTop: 0 }}>Phase 0 — Project Foundation</p>
+      <p style={{ opacity: 0.7, marginTop: 0 }}>Phase 0 - Project Foundation</p>
 
       <section
         style={{
