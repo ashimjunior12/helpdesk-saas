@@ -19,7 +19,12 @@ function toPublicUser(user: UserDocument): AuthResult['user'] {
 }
 
 function toAuthResult(user: UserDocument): AuthResult {
-  const identity: AuthenticatedUser = { id: user.id, email: user.email };
+  const identity: AuthenticatedUser = {
+    id: user.id,
+    email: user.email,
+    organizationId: user.organizationId ? String(user.organizationId) : null,
+    role: user.role ?? null,
+  };
   return { user: toPublicUser(user), ...issueTokenPair(identity) };
 }
 

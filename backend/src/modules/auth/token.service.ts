@@ -1,6 +1,7 @@
 import jwt, { type SignOptions } from 'jsonwebtoken';
 import { env } from '../../config/env.js';
 import { AppError } from '../../utils/AppError.js';
+import type { UserRole } from './user.model.js';
 
 type TokenType = 'access' | 'refresh';
 
@@ -8,18 +9,28 @@ interface TokenPayload {
   sub: string;
   type: TokenType;
   email?: string;
+  organizationId?: string | null;
+  role?: UserRole | null;
 }
 
 export interface AuthenticatedUser {
   id: string;
   email: string;
+  organizationId: string | null;
+  role: UserRole | null;
 }
 
 const accessTtl = env.JWT_ACCESS_TTL as SignOptions['expiresIn'];
 const refreshTtl = env.JWT_REFRESH_TTL as SignOptions['expiresIn'];
 
 export function signAccessToken(user: AuthenticatedUser): string {
-  const payload: TokenPayload = { sub: user.id, email: user.email, type: 'access' };
+  const payload: TokenPayload = {
+    sub: user.id,
+    email: user.email,
+    type: 'access',
+    organizationId: user.organizationId,
+    role: user.role,
+  };
   return jwt.sign(payload, env.JWT_ACCESS_SECRET, { expiresIn: accessTtl });
 }
 
@@ -43,7 +54,12 @@ export function verifyAccessToken(token: string): AuthenticatedUser {
   if (payload.type !== 'access' || !payload.email) {
     throw AppError.unauthorized('Invalid access token');
   }
-  return { id: payload.sub, email: payload.email };
+  return {
+    id: payload.sub,
+    email: payload.email,
+    organizationId: payload.organizationId ?? null,
+    role: payload.role ?? null,
+  };
 }
 
 export function verifyRefreshToken(token: string): { userId: string } {

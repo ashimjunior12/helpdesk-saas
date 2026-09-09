@@ -1,9 +1,15 @@
-import { Schema, model, type HydratedDocument } from 'mongoose';
+import { Schema, model, Types, type HydratedDocument } from 'mongoose';
+
+export const USER_ROLES = ['ADMIN', 'MANAGER', 'AGENT'] as const;
+export type UserRole = (typeof USER_ROLES)[number];
 
 export interface User {
   email: string;
   passwordHash: string;
   name: string;
+  // Null until the user creates or joins an organization (Phase 2).
+  organizationId: Types.ObjectId | null;
+  role: UserRole | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,6 +35,17 @@ const userSchema = new Schema<User>(
       required: true,
       trim: true,
       maxlength: 100,
+    },
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Organization',
+      default: null,
+      index: true,
+    },
+    role: {
+      type: String,
+      enum: USER_ROLES,
+      default: null,
     },
   },
   {
