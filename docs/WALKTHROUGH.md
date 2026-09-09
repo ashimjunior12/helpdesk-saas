@@ -453,3 +453,59 @@ curl -s -X DELETE http://localhost:4000/api/tickets/<ticketId> -H "Authorization
 ```
 
 `204` on success; `403 FORBIDDEN` for an AGENT; `404` for another tenant's ticket.
+
+---
+
+## Phase 6 — Conversations & Messages
+
+**What / why.** The back-and-forth on a ticket. Messages are attached directly
+to the ticket (the ticket is the conversation), turning a static record into a
+support thread.
+
+**Business logic.**
+- A message is reached through its ticket; the ticket is looked up tenant-scoped,
+  so a ticket in another organization is unreachable (`404`).
+- The authenticated staff member posts a message and sets `authorType`:
+  `AGENT` attributes it to the acting user; `CUSTOMER` attributes it to the
+  ticket's customer (for logging inbound emails/calls until the widget exists).
+- Messages are append-only (no edit). Listing is chronological (oldest first)
+  with pagination. Posting a message does not auto-change ticket status.
+- Create/list: any role. Delete (moderation): `ADMIN` or `MANAGER`.
+
+All endpoints require `Authorization: Bearer <access token with org context>`.
+
+### Post a message (any role)
+
+```bash
+ADMIN="<org-scoped access token>"
+# Agent reply
+curl -s -X POST http://localhost:4000/api/tickets/<ticketId>/messages \
+  -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
+  -d '{"body":"Looking into this now.","authorType":"AGENT"}'
+
+# Log an inbound customer message
+curl -s -X POST http://localhost:4000/api/tickets/<ticketId>/messages \
+  -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
+  -d '{"body":"It still fails on mobile.","authorType":"CUSTOMER"}'
+```
+
+`201` with the message (`authorType`, `authorId`, `body`, `createdAt`). `404` if
+the ticket is outside the caller's org; `400` for an empty body or bad authorType.
+
+### List the conversation (any role)
+
+```bash
+curl -s "http://localhost:4000/api/tickets/<ticketId>/messages?page=1&limit=50" \
+  -H "Authorization: Bearer $ADMIN"
+```
+
+Returns `{ messages: [...oldest first...], pagination: { page, limit, total, totalPages } }`.
+
+### Delete a message (ADMIN or MANAGER)
+
+```bash
+curl -s -X DELETE http://localhost:4000/api/tickets/<ticketId>/messages/<messageId> \
+  -H "Authorization: Bearer $ADMIN"
+```
+
+`204` on success; `403 FORBIDDEN` for an AGENT; `404` for another tenant's ticket/message.
