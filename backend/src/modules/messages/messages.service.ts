@@ -2,6 +2,7 @@ import { AppError } from '../../utils/AppError.js';
 import { logger } from '../../utils/logger.js';
 import { getTicket } from '../tickets/tickets.service.js';
 import { SOCKET_EVENTS, emitToTicket } from '../../sockets/registry.js';
+import { notifyTicketMessage } from '../notifications/notifications.service.js';
 import { MessageModel, type MessageDocument } from './message.model.js';
 import type { CreateMessageInput, ListMessagesQuery } from './messages.validation.js';
 
@@ -38,6 +39,7 @@ export async function addMessage(
     'Message added',
   );
   emitToTicket(ticketId, SOCKET_EVENTS.MESSAGE_CREATED, message.toJSON());
+  await notifyTicketMessage(ticket, actorUserId);
   return message;
 }
 

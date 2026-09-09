@@ -7,6 +7,10 @@ import { TeamModel } from '../teams/team.model.js';
 import { TicketModel, TICKET_TRANSITIONS, type Ticket, type TicketDocument } from './ticket.model.js';
 import { nextTicketNumber } from './counter.model.js';
 import { SOCKET_EVENTS, emitToOrg, emitToTicket } from '../../sockets/registry.js';
+import {
+  notifyTicketAssigned,
+  notifyTicketStatus,
+} from '../notifications/notifications.service.js';
 import type {
   AssignTicketInput,
   ChangeStatusInput,
@@ -46,6 +50,7 @@ async function assertTeamInOrg(organizationId: string, teamId: string): Promise<
 
 export async function createTicket(
   organizationId: string,
+  actorUserId: string,
   input: CreateTicketInput,
 ): Promise<TicketDocument> {
   await assertCustomerInOrg(organizationId, input.customerId);
@@ -67,6 +72,7 @@ export async function createTicket(
         'Ticket created',
       );
       emitToOrg(organizationId, SOCKET_EVENTS.TICKET_CREATED, ticket.toJSON());
+      await notifyTicketAssigned(ticket, actorUserId);
       return ticket;
     } catch (err) {
       if (isDuplicateKeyError(err) && attempt < CREATE_RETRIES - 1) {
@@ -130,6 +136,7 @@ export async function updateTicket(
 export async function changeStatus(
   organizationId: string,
   ticketId: string,
+  actorUserId: string,
   input: ChangeStatusInput,
 ): Promise<TicketDocument> {
   const ticket = await getTicket(organizationId, ticketId);
@@ -151,12 +158,14 @@ export async function changeStatus(
   const payload = ticket.toJSON();
   emitToTicket(ticketId, SOCKET_EVENTS.TICKET_STATUS_CHANGED, payload);
   emitToOrg(organizationId, SOCKET_EVENTS.TICKET_STATUS_CHANGED, payload);
+  await notifyTicketStatus(ticket, actorUserId);
   return ticket;
 }
 
 export async function assignTicket(
   organizationId: string,
   ticketId: string,
+  actorUserId: string,
   input: AssignTicketInput,
 ): Promise<TicketDocument> {
   const update: Record<string, unknown> = {};
@@ -184,6 +193,7 @@ export async function assignTicket(
   const payload = ticket.toJSON();
   emitToTicket(ticketId, SOCKET_EVENTS.TICKET_ASSIGNED, payload);
   emitToOrg(organizationId, SOCKET_EVENTS.TICKET_ASSIGNED, payload);
+  await notifyTicketAssigned(ticket, actorUserId);
   return ticket;
 }
 

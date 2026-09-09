@@ -18,7 +18,11 @@ import {
 } from './tickets.validation.js';
 
 export const create = asyncHandler(async (req: Request, res: Response) => {
-  const ticket = await createTicket(req.user!.organizationId!, req.body as CreateTicketInput);
+  const ticket = await createTicket(
+    req.user!.organizationId!,
+    req.user!.id,
+    req.body as CreateTicketInput,
+  );
   res.status(201).json({ success: true, data: { ticket } });
 });
 
@@ -52,6 +56,7 @@ export const changeTicketStatus = asyncHandler(async (req: Request, res: Respons
   const ticket = await changeStatus(
     req.user!.organizationId!,
     req.params.id,
+    req.user!.id,
     req.body as ChangeStatusInput,
   );
   res.status(200).json({ success: true, data: { ticket } });
@@ -61,6 +66,7 @@ export const assign = asyncHandler(async (req: Request, res: Response) => {
   const ticket = await assignTicket(
     req.user!.organizationId!,
     req.params.id,
+    req.user!.id,
     req.body as AssignTicketInput,
   );
   res.status(200).json({ success: true, data: { ticket } });
