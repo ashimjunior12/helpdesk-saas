@@ -570,3 +570,55 @@ socket.emit('ticket:unsubscribe', { ticketId });
 
 A new message still gets posted over REST (`POST /api/tickets/:id/messages`);
 subscribed clients receive it as a `message:created` event in real time.
+
+---
+
+## Phase 8 — Internal Notes
+
+**What / why.** Private, staff-only notes on a ticket (context, escalation
+reasoning) that the customer must never see.
+
+**Business logic.**
+- Notes live in their own collection with their own endpoints. The public
+  messages endpoint never queries notes, so a note cannot leak to a
+  customer-facing channel by construction.
+- A note is always authored by the acting staff user. Any staff role can create
+  and list notes; delete is `ADMIN` or `MANAGER`. Append-only.
+- Reached through a tenant-scoped ticket lookup (another org's ticket -> 404).
+- Real-time: `note:created` / `note:deleted` are emitted to the ticket room,
+  which today only authenticated staff can join.
+
+All endpoints require `Authorization: Bearer <access token with org context>`.
+
+### Add a note (any staff role)
+
+```bash
+ADMIN="<org-scoped access token>"
+curl -s -X POST http://localhost:4000/api/tickets/<ticketId>/notes \
+  -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
+  -d '{"body":"Called billing; refund approved, awaiting confirmation."}'
+```
+
+`201` with the note (`authorId`, `body`, `createdAt`). `404` if the ticket is
+outside the caller's org; `400` for an empty body.
+
+### List notes (any staff role)
+
+```bash
+curl -s "http://localhost:4000/api/tickets/<ticketId>/notes?page=1&limit=50" \
+  -H "Authorization: Bearer $ADMIN"
+```
+
+Returns `{ notes: [...oldest first...], pagination: { ... } }`.
+
+### Delete a note (ADMIN or MANAGER)
+
+```bash
+curl -s -X DELETE http://localhost:4000/api/tickets/<ticketId>/notes/<noteId> \
+  -H "Authorization: Bearer $ADMIN"
+```
+
+`204`; `403 FORBIDDEN` for an AGENT; `404` for another tenant's ticket/note.
+
+Notes and messages are separate: `GET /api/tickets/:id/messages` returns only
+public messages and never internal notes.
