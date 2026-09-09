@@ -8,6 +8,8 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { healthRouter } from './modules/health/health.routes.js';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { organizationRouter } from './modules/organizations/organization.routes.js';
+import { usersRouter } from './modules/users/users.routes.js';
+import { teamsRouter } from './modules/teams/teams.routes.js';
 
 /**
  * Builds and configures the Express application.
@@ -40,6 +42,8 @@ export function createApp(): Application {
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
   app.use('/api/organizations', organizationRouter);
+  app.use('/api/users', usersRouter);
+  app.use('/api/teams', teamsRouter);
 
   // Unmatched routes and centralized error handling come last.
   app.use(notFound);
