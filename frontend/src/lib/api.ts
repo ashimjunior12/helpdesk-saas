@@ -22,7 +22,7 @@ export async function fetchHealth(): Promise<HealthResponse | null> {
     const res = await fetch(`${API_BASE_URL}/api/health`, { cache: 'no-store' });
     return (await res.json()) as HealthResponse;
   } catch {
-    // Backend not running / unreachable — the page renders a disconnected state.
+    // Backend not running / unreachable - the page renders a disconnected state.
     return null;
   }
 }

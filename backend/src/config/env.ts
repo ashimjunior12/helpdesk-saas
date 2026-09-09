@@ -16,6 +16,15 @@ const envSchema = z.object({
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),
+
+  // Auth. Separate secrets for access and refresh tokens so a leaked access
+  // secret cannot be used to forge long-lived refresh tokens. Required with a
+  // minimum length so the process fails fast on weak/missing signing keys.
+  JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters'),
+  JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
+  // Token lifetimes, expressed as vercel/ms-style durations (e.g. 15m, 7d).
+  JWT_ACCESS_TTL: z.string().min(1).default('15m'),
+  JWT_REFRESH_TTL: z.string().min(1).default('7d'),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -24,7 +33,7 @@ if (!parsed.success) {
   // We cannot use the structured logger here because it depends on this config.
   // eslint-disable-next-line no-console
   console.error(
-    '❌ Invalid environment configuration:',
+    'Invalid environment configuration:',
     parsed.error.flatten().fieldErrors,
   );
   process.exit(1);

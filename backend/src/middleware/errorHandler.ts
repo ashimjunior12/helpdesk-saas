@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
+import mongoose from 'mongoose';
 import { AppError } from '../utils/AppError.js';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
@@ -25,6 +26,9 @@ export function errorHandler(
     appError = err;
   } else if (err instanceof ZodError) {
     appError = AppError.badRequest('Validation failed', err.flatten());
+  } else if (err instanceof mongoose.Error.CastError) {
+    // A malformed id (or similar) in a lookup: treat as not found rather than 500.
+    appError = AppError.notFound('Resource not found');
   } else {
     // Unknown/unexpected error: log the full detail, but expose a generic
     // message so internals never reach the client.
