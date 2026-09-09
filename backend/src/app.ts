@@ -12,6 +12,7 @@ import { usersRouter } from './modules/users/users.routes.js';
 import { teamsRouter } from './modules/teams/teams.routes.js';
 import { customersRouter } from './modules/customers/customers.routes.js';
 import { ticketsRouter } from './modules/tickets/tickets.routes.js';
+import { messagesRouter } from './modules/messages/messages.routes.js';
 
 /**
  * Builds and configures the Express application.
@@ -48,6 +49,7 @@ export function createApp(): Application {
   app.use('/api/teams', teamsRouter);
   app.use('/api/customers', customersRouter);
   app.use('/api/tickets', ticketsRouter);
+  app.use('/api/tickets/:ticketId/messages', messagesRouter);
 
   // Unmatched routes and centralized error handling come last.
   app.use(notFound);
