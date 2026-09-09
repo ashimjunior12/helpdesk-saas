@@ -287,3 +287,73 @@ curl -s -X DELETE http://localhost:4000/api/teams/<teamId>/members/<userId> \
 
 `409 TEAM_NAME_TAKEN` for a duplicate name within the org; `404` for a team or
 member outside your organization; `403 FORBIDDEN` for an AGENT attempting to manage.
+
+---
+
+## Phase 4 — Customers
+
+**What / why.** Customers are the end-users who need support (distinct from
+`Users`, who are the org's staff). Each organization manages its own customer
+records; tickets (Phase 5) will be raised on behalf of a customer.
+
+**Business logic.**
+- A customer's email is required and unique within the organization (two
+  different tenants may reuse the same email).
+- Reading and searching customers is available to any org member. Creating and
+  updating is allowed for any role (agents work with customers daily); deleting
+  is restricted to `ADMIN` or `MANAGER`.
+- Listing supports `?search=` (matches name or email, case-insensitive) with
+  offset pagination (`?page=&limit=`, limit 1..100, default 20).
+- Every query is scoped by the caller's `organizationId`; a customer in another
+  tenant returns `404`.
+
+All endpoints require `Authorization: Bearer <access token with org context>`.
+
+### Create (any role)
+
+```bash
+ADMIN="<org-scoped access token>"
+curl -s -X POST http://localhost:4000/api/customers \
+  -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
+  -d '{"name":"Jane Buyer","email":"jane@buyer.com","phone":"+1 555 0100","notes":"VIP"}'
+```
+
+`201` with the customer. `409 CUSTOMER_EMAIL_TAKEN` for a duplicate email in the
+org; `400 BAD_REQUEST` for invalid input.
+
+### List / search / paginate (any role)
+
+```bash
+curl -s "http://localhost:4000/api/customers?search=jane&page=1&limit=20" \
+  -H "Authorization: Bearer $ADMIN"
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "customers": [ { "id": "...", "name": "Jane Buyer", "email": "jane@buyer.com" } ],
+    "pagination": { "page": 1, "limit": 20, "total": 1, "totalPages": 1 }
+  }
+}
+```
+
+### Get / update (any role)
+
+```bash
+curl -s http://localhost:4000/api/customers/<customerId> -H "Authorization: Bearer $ADMIN"
+
+curl -s -X PATCH http://localhost:4000/api/customers/<customerId> \
+  -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
+  -d '{"notes":"Renewed plan"}'
+```
+
+`404` for a customer outside the caller's organization.
+
+### Delete (ADMIN or MANAGER)
+
+```bash
+curl -s -X DELETE http://localhost:4000/api/customers/<customerId> -H "Authorization: Bearer $ADMIN"
+```
+
+`204` on success; `403 FORBIDDEN` for an AGENT; `404` for another tenant's customer.
