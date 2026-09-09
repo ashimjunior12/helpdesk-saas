@@ -509,3 +509,64 @@ curl -s -X DELETE http://localhost:4000/api/tickets/<ticketId>/messages/<message
 ```
 
 `204` on success; `403 FORBIDDEN` for an AGENT; `404` for another tenant's ticket/message.
+
+---
+
+## Phase 7 — Real-Time Messaging (Socket.IO)
+
+**What / why.** Push live updates to connected agents (new messages, ticket
+changes) instead of polling. A Socket.IO server runs on the same HTTP server as
+the REST API.
+
+**Business logic.**
+- **Auth:** the client sends the access token in the handshake (`auth: { token }`);
+  it is verified with the same logic as the REST API. No/invalid token -> the
+  connection is refused (`connect_error` "Unauthorized").
+- **Rooms & scoping:** on connect the socket joins its org room automatically.
+  To receive a ticket's events the client sends `ticket:subscribe { ticketId }`;
+  the server joins the ticket room only after confirming the ticket is in the
+  caller's org, so a foreign/guessed ticket id can never be joined.
+- **Events are emitted from the normal REST flows** - creating a message or
+  changing a ticket over HTTP broadcasts to the relevant rooms. There is no
+  separate write path over the socket.
+
+Server -> client events:
+
+| Event | Room | Fired when |
+| ----- | ---- | ---------- |
+| `message:created` | ticket | a message is posted |
+| `message:deleted` | ticket | a message is deleted |
+| `ticket:created` | org | a ticket is created |
+| `ticket:updated` | org + ticket | a ticket's content is edited |
+| `ticket:status_changed` | org + ticket | status transition |
+| `ticket:assigned` | org + ticket | agent/team assignment changes |
+| `ticket:deleted` | org | a ticket is deleted |
+
+Client -> server events (with ack): `ticket:subscribe { ticketId }`,
+`ticket:unsubscribe { ticketId }` -> `{ ok: true } | { ok: false, error }`.
+
+### Client example (socket.io-client)
+
+```js
+import { io } from 'socket.io-client';
+
+const socket = io('http://localhost:4000', {
+  transports: ['websocket'],
+  auth: { token: accessToken }, // the JWT access token
+});
+
+socket.on('connect_error', (err) => console.error('socket auth failed:', err.message));
+
+// Subscribe to a ticket's live stream
+const ack = await socket.emitWithAck('ticket:subscribe', { ticketId });
+// ack === { ok: true }  (or { ok: false, error: 'NOT_FOUND' | 'INVALID' })
+
+socket.on('message:created', (message) => appendToThread(message));
+socket.on('ticket:status_changed', (ticket) => updateTicket(ticket));
+
+// Later
+socket.emit('ticket:unsubscribe', { ticketId });
+```
+
+A new message still gets posted over REST (`POST /api/tickets/:id/messages`);
+subscribed clients receive it as a `message:created` event in real time.
