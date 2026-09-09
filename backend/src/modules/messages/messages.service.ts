@@ -1,6 +1,7 @@
 import { AppError } from '../../utils/AppError.js';
 import { logger } from '../../utils/logger.js';
 import { getTicket } from '../tickets/tickets.service.js';
+import { SOCKET_EVENTS, emitToTicket } from '../../sockets/registry.js';
 import { MessageModel, type MessageDocument } from './message.model.js';
 import type { CreateMessageInput, ListMessagesQuery } from './messages.validation.js';
 
@@ -36,6 +37,7 @@ export async function addMessage(
     { operation: 'messages.create', organizationId, ticketId, messageId: message.id },
     'Message added',
   );
+  emitToTicket(ticketId, SOCKET_EVENTS.MESSAGE_CREATED, message.toJSON());
   return message;
 }
 
@@ -70,4 +72,5 @@ export async function deleteMessage(
     { operation: 'messages.delete', organizationId, ticketId, messageId },
     'Message deleted',
   );
+  emitToTicket(ticketId, SOCKET_EVENTS.MESSAGE_DELETED, { id: messageId, ticketId });
 }

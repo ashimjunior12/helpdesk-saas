@@ -6,6 +6,7 @@ import { UserModel } from '../auth/user.model.js';
 import { TeamModel } from '../teams/team.model.js';
 import { TicketModel, TICKET_TRANSITIONS, type Ticket, type TicketDocument } from './ticket.model.js';
 import { nextTicketNumber } from './counter.model.js';
+import { SOCKET_EVENTS, emitToOrg, emitToTicket } from '../../sockets/registry.js';
 import type {
   AssignTicketInput,
   ChangeStatusInput,
@@ -65,6 +66,7 @@ export async function createTicket(
         { operation: 'tickets.create', organizationId, ticketId: ticket.id, number },
         'Ticket created',
       );
+      emitToOrg(organizationId, SOCKET_EVENTS.TICKET_CREATED, ticket.toJSON());
       return ticket;
     } catch (err) {
       if (isDuplicateKeyError(err) && attempt < CREATE_RETRIES - 1) {
@@ -119,6 +121,9 @@ export async function updateTicket(
   if (!ticket) {
     throw AppError.notFound('Ticket not found');
   }
+  const payload = ticket.toJSON();
+  emitToTicket(ticketId, SOCKET_EVENTS.TICKET_UPDATED, payload);
+  emitToOrg(organizationId, SOCKET_EVENTS.TICKET_UPDATED, payload);
   return ticket;
 }
 
@@ -143,6 +148,9 @@ export async function changeStatus(
     { operation: 'tickets.status', organizationId, ticketId, status: input.status },
     'Ticket status changed',
   );
+  const payload = ticket.toJSON();
+  emitToTicket(ticketId, SOCKET_EVENTS.TICKET_STATUS_CHANGED, payload);
+  emitToOrg(organizationId, SOCKET_EVENTS.TICKET_STATUS_CHANGED, payload);
   return ticket;
 }
 
@@ -173,6 +181,9 @@ export async function assignTicket(
   if (!ticket) {
     throw AppError.notFound('Ticket not found');
   }
+  const payload = ticket.toJSON();
+  emitToTicket(ticketId, SOCKET_EVENTS.TICKET_ASSIGNED, payload);
+  emitToOrg(organizationId, SOCKET_EVENTS.TICKET_ASSIGNED, payload);
   return ticket;
 }
 
@@ -182,6 +193,7 @@ export async function deleteTicket(organizationId: string, ticketId: string): Pr
     throw AppError.notFound('Ticket not found');
   }
   logger.info({ operation: 'tickets.delete', organizationId, ticketId }, 'Ticket deleted');
+  emitToOrg(organizationId, SOCKET_EVENTS.TICKET_DELETED, { id: ticketId });
 }
 
 function escapeRegex(input: string): string {
