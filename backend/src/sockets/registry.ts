@@ -14,6 +14,7 @@ export const SOCKET_EVENTS = {
   // customer connections (which will use a separate namespace when they exist).
   NOTE_CREATED: 'note:created',
   NOTE_DELETED: 'note:deleted',
+  NOTIFICATION_CREATED: 'notification:created',
 } as const;
 
 export type SocketEvent = (typeof SOCKET_EVENTS)[keyof typeof SOCKET_EVENTS];
@@ -24,6 +25,7 @@ export interface SocketData {
 
 export const orgRoom = (organizationId: string): string => `org:${organizationId}`;
 export const ticketRoom = (ticketId: string): string => `ticket:${ticketId}`;
+export const userRoom = (userId: string): string => `user:${userId}`;
 
 // The io instance is set at server startup. It stays undefined in unit/HTTP
 // integration tests (no socket server), so the emit helpers below are no-ops
@@ -44,4 +46,8 @@ export function emitToOrg(organizationId: string, event: SocketEvent, payload: u
 
 export function emitToTicket(ticketId: string, event: SocketEvent, payload: unknown): void {
   io?.to(ticketRoom(ticketId)).emit(event, payload);
+}
+
+export function emitToUser(userId: string, event: SocketEvent, payload: unknown): void {
+  io?.to(userRoom(userId)).emit(event, payload);
 }

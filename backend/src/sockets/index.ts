@@ -4,7 +4,7 @@ import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import { TicketModel } from '../modules/tickets/ticket.model.js';
 import { authenticateSocket } from './socketAuth.js';
-import { orgRoom, setIO, ticketRoom, type SocketData } from './registry.js';
+import { orgRoom, setIO, ticketRoom, userRoom, type SocketData } from './registry.js';
 
 type Ack = (response: { ok: boolean; error?: string }) => void;
 
@@ -23,7 +23,9 @@ export function initRealtime(httpServer: HttpServer): Server {
   io.on('connection', (socket) => {
     const { user } = socket.data as SocketData;
 
-    // Everyone in an org shares its room for org-wide events (new tickets, etc.).
+    // Everyone in an org shares its room for org-wide events (new tickets, etc.),
+    // plus a private per-user room for personal notifications.
+    socket.join(userRoom(user.id));
     if (user.organizationId) {
       socket.join(orgRoom(user.organizationId));
     }
