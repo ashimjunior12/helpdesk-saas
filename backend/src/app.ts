@@ -14,6 +14,7 @@ import { customersRouter } from './modules/customers/customers.routes.js';
 import { ticketsRouter } from './modules/tickets/tickets.routes.js';
 import { messagesRouter } from './modules/messages/messages.routes.js';
 import { notesRouter } from './modules/notes/notes.routes.js';
+import { notificationsRouter } from './modules/notifications/notifications.routes.js';
 
 /**
  * Builds and configures the Express application.
@@ -52,6 +53,7 @@ export function createApp(): Application {
   app.use('/api/tickets', ticketsRouter);
   app.use('/api/tickets/:ticketId/messages', messagesRouter);
   app.use('/api/tickets/:ticketId/notes', notesRouter);
+  app.use('/api/notifications', notificationsRouter);
 
   // Unmatched routes and centralized error handling come last.
   app.use(notFound);
