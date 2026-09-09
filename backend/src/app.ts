@@ -10,6 +10,7 @@ import { authRouter } from './modules/auth/auth.routes.js';
 import { organizationRouter } from './modules/organizations/organization.routes.js';
 import { usersRouter } from './modules/users/users.routes.js';
 import { teamsRouter } from './modules/teams/teams.routes.js';
+import { customersRouter } from './modules/customers/customers.routes.js';
 
 /**
  * Builds and configures the Express application.
@@ -44,6 +45,7 @@ export function createApp(): Application {
   app.use('/api/organizations', organizationRouter);
   app.use('/api/users', usersRouter);
   app.use('/api/teams', teamsRouter);
+  app.use('/api/customers', customersRouter);
 
   // Unmatched routes and centralized error handling come last.
   app.use(notFound);
