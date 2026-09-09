@@ -678,3 +678,39 @@ curl -s -X POST http://localhost:4000/api/notifications/read-all  -H "Authorizat
 ```js
 socket.on('notification:created', (n) => { badge.increment(); toast(n.title); });
 ```
+
+---
+
+## Phase 10 — Redis + BullMQ
+
+**What / why.** Move fan-out work (starting with notifications) off the request
+path into a background worker, so slow or bursty side-effects don't block the
+API response. Redis backs the BullMQ queues.
+
+**Business logic.**
+- **Optional by design.** If `REDIS_URL` is not set, queues are disabled and the
+  work runs **inline** - the app runs fully without Redis (dev and tests do this).
+- When `REDIS_URL` is set, notification generation is enqueued to the
+  `notifications` queue and processed by a worker (attempts: 3, exponential
+  backoff). The API responds without waiting for the notification write.
+- **Graceful degradation:** if Redis is configured but unreachable at enqueue
+  time, the code falls back to running the job inline, so a notification is never
+  silently lost.
+- The unit of work is unchanged (persist notification + emit `notification:created`);
+  only *where* it runs moves. Ticket/message flows are untouched by the switch.
+
+**Running with Redis (optional):**
+
+```bash
+# Start Redis (e.g. Docker)
+docker run -p 6379:6379 redis:7
+
+# Point the backend at it
+echo 'REDIS_URL=redis://127.0.0.1:6379' >> backend/.env
+npm run dev   # logs "Workers started" instead of "Queues disabled"
+```
+
+There are no new HTTP endpoints in this phase - the API surface is identical;
+notifications simply flow through the queue when Redis is present. This queue +
+worker pattern (retries, backoff, inline fallback) is what later async work
+(SLA checks, email) will reuse.
