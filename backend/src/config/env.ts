@@ -25,6 +25,11 @@ const envSchema = z.object({
   // Token lifetimes, expressed as vercel/ms-style durations (e.g. 15m, 7d).
   JWT_ACCESS_TTL: z.string().min(1).default('15m'),
   JWT_REFRESH_TTL: z.string().min(1).default('7d'),
+
+  // Optional. When set, background jobs (e.g. notifications) run through BullMQ
+  // on this Redis. When unset, those jobs run inline, so the app works without
+  // Redis in development and tests.
+  REDIS_URL: z.string().min(1).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
