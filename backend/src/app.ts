@@ -7,6 +7,7 @@ import { notFound } from './middleware/notFound.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { healthRouter } from './modules/health/health.routes.js';
 import { authRouter } from './modules/auth/auth.routes.js';
+import { organizationRouter } from './modules/organizations/organization.routes.js';
 
 /**
  * Builds and configures the Express application.
@@ -38,6 +39,7 @@ export function createApp(): Application {
   // Feature routers mount under /api. More modules will be added in later phases.
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
+  app.use('/api/organizations', organizationRouter);
 
   // Unmatched routes and centralized error handling come last.
   app.use(notFound);
