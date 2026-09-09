@@ -198,3 +198,92 @@ curl -s -X PATCH http://localhost:4000/api/organizations/me \
 
 `200 OK` with the updated organization. (Role-based restriction on who may edit is
 added in Phase 3.)
+
+---
+
+## Phase 3 — Users, Roles & Teams
+
+**What / why.** Turn an organization into a real team: manage its members,
+enforce roles on the backend, and group agents into teams for future ticket
+routing.
+
+**Business logic.**
+- Roles are enforced server-side (not just hidden in the UI). Matrix:
+  managing **users** (create, change role, activate/deactivate) is `ADMIN`;
+  managing **teams** (create/rename/delete + membership) is `ADMIN` or
+  `MANAGER`; listing users/teams is available to any role. `AGENT` is read-only.
+- Members are created directly by an admin (email, name, password, role) and
+  then log in via `/auth/login`.
+- You cannot modify your own role or status, which guarantees the org always
+  keeps at least one active admin (no lockout).
+- Deactivating a user blocks new logins and refreshes (`403 ACCOUNT_DISABLED`);
+  an already-issued access token still works until it expires (~15m).
+- All queries are scoped by the caller's `organizationId`; a resource in another
+  tenant returns `404`. Team members must belong to the same organization.
+
+All endpoints below require `Authorization: Bearer <access token with org context>`.
+
+### Create a member (ADMIN)
+
+```bash
+ADMIN="<org-scoped admin access token>"
+curl -s -X POST http://localhost:4000/api/users \
+  -H "Authorization: Bearer $ADMIN" \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"agent@example.com","name":"Amy Agent","password":"sup3rsecret","role":"AGENT"}'
+```
+
+`201` with the new user. Errors: `403 FORBIDDEN` (caller not ADMIN),
+`409 EMAIL_TAKEN`, `400 BAD_REQUEST`.
+
+### List / get members (any role)
+
+```bash
+curl -s http://localhost:4000/api/users -H "Authorization: Bearer $ADMIN"
+curl -s http://localhost:4000/api/users/<userId> -H "Authorization: Bearer $ADMIN"
+```
+
+`GET /:id` returns `404` for a user outside your organization.
+
+### Change role or activate/deactivate (ADMIN)
+
+```bash
+curl -s -X PATCH http://localhost:4000/api/users/<userId> \
+  -H "Authorization: Bearer $ADMIN" \
+  -H 'Content-Type: application/json' \
+  -d '{"role":"MANAGER"}'
+
+curl -s -X PATCH http://localhost:4000/api/users/<userId> \
+  -H "Authorization: Bearer $ADMIN" \
+  -H 'Content-Type: application/json' \
+  -d '{"isActive":false}'
+```
+
+`400 CANNOT_MODIFY_SELF` if `<userId>` is your own id; `404` for another tenant's user.
+
+### Teams (ADMIN or MANAGER to manage; any role to read)
+
+```bash
+# Create
+curl -s -X POST http://localhost:4000/api/teams \
+  -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
+  -d '{"name":"Billing"}'
+
+# List / get
+curl -s http://localhost:4000/api/teams -H "Authorization: Bearer $ADMIN"
+curl -s http://localhost:4000/api/teams/<teamId> -H "Authorization: Bearer $ADMIN"
+
+# Rename / delete
+curl -s -X PATCH http://localhost:4000/api/teams/<teamId> \
+  -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' -d '{"name":"Billing EU"}'
+curl -s -X DELETE http://localhost:4000/api/teams/<teamId> -H "Authorization: Bearer $ADMIN"
+
+# Membership
+curl -s -X POST http://localhost:4000/api/teams/<teamId>/members \
+  -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' -d '{"userId":"<userId>"}'
+curl -s -X DELETE http://localhost:4000/api/teams/<teamId>/members/<userId> \
+  -H "Authorization: Bearer $ADMIN"
+```
+
+`409 TEAM_NAME_TAKEN` for a duplicate name within the org; `404` for a team or
+member outside your organization; `403 FORBIDDEN` for an AGENT attempting to manage.
