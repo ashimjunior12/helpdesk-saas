@@ -622,3 +622,59 @@ curl -s -X DELETE http://localhost:4000/api/tickets/<ticketId>/notes/<noteId> \
 
 Notes and messages are separate: `GET /api/tickets/:id/messages` returns only
 public messages and never internal notes.
+
+---
+
+## Phase 9 — Notifications
+
+**What / why.** Tell an agent when something needs them: a ticket assigned to
+them, a new message, or a status change. Stored per user (for a badge / unread
+count) and pushed live over the socket layer.
+
+**Business logic.**
+- Recipients are the ticket's **assigned agent**; the person who performed the
+  action is never notified of their own action.
+- Triggers: `TICKET_ASSIGNED` (on assignment or assigned-at-creation),
+  `TICKET_MESSAGE` (new message), `TICKET_STATUS` (status change).
+- Notifications are per user, scoped to `{ userId, organizationId }` - you only
+  ever see and manage your own.
+- Generation is best-effort: a notification failure never fails the underlying
+  ticket/message operation.
+- Live delivery: `notification:created` is emitted to the recipient's private
+  `user:<id>` socket room (joined automatically on connect).
+
+All endpoints require `Authorization: Bearer <access token with org context>`.
+
+### List your notifications
+
+```bash
+TOKEN="<org-scoped access token>"
+curl -s "http://localhost:4000/api/notifications?unread=true&page=1&limit=20" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Returns `{ notifications: [...newest first...], pagination: { ... } }`. Each
+notification has `type`, `title`, `body`, `ticketId`, `ticketNumber`, `isRead`.
+
+### Unread count (for a badge)
+
+```bash
+curl -s http://localhost:4000/api/notifications/unread-count -H "Authorization: Bearer $TOKEN"
+# { "success": true, "data": { "count": 3 } }
+```
+
+### Mark one / all read
+
+```bash
+curl -s -X POST http://localhost:4000/api/notifications/<id>/read -H "Authorization: Bearer $TOKEN"
+curl -s -X POST http://localhost:4000/api/notifications/read-all  -H "Authorization: Bearer $TOKEN"
+# read-all -> { "data": { "updated": <count> } }
+```
+
+`404` when marking a notification that is not yours.
+
+### Live delivery (socket)
+
+```js
+socket.on('notification:created', (n) => { badge.increment(); toast(n.title); });
+```
