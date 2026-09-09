@@ -10,6 +10,10 @@ export const SOCKET_EVENTS = {
   TICKET_STATUS_CHANGED: 'ticket:status_changed',
   TICKET_ASSIGNED: 'ticket:assigned',
   TICKET_DELETED: 'ticket:deleted',
+  // Internal notes: only staff subscribe to ticket rooms, so these never reach
+  // customer connections (which will use a separate namespace when they exist).
+  NOTE_CREATED: 'note:created',
+  NOTE_DELETED: 'note:deleted',
 } as const;
 
 export type SocketEvent = (typeof SOCKET_EVENTS)[keyof typeof SOCKET_EVENTS];
