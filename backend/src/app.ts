@@ -19,6 +19,7 @@ import { slaRouter } from './modules/sla/sla.routes.js';
 import { attachmentsRouter } from './modules/attachments/attachments.routes.js';
 import { searchRouter } from './modules/search/search.routes.js';
 import { analyticsRouter } from './modules/analytics/analytics.routes.js';
+import { automationRouter } from './modules/automation/automation.routes.js';
 
 /**
  * Builds and configures the Express application.
@@ -62,6 +63,7 @@ export function createApp(): Application {
   app.use('/api/tickets/:ticketId/attachments', attachmentsRouter);
   app.use('/api/search', searchRouter);
   app.use('/api/analytics', analyticsRouter);
+  app.use('/api/automation-rules', automationRouter);
 
   // Unmatched routes and centralized error handling come last.
   app.use(notFound);

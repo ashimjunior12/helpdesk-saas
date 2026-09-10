@@ -12,6 +12,7 @@ import {
   notifyTicketStatus,
 } from '../notifications/notifications.service.js';
 import { computeDueDates } from '../sla/sla.service.js';
+import { applyAutomationOnCreate } from '../automation/automation.service.js';
 import type {
   AssignTicketInput,
   ChangeStatusInput,
@@ -87,6 +88,9 @@ export async function createTicket(
         { operation: 'tickets.create', organizationId, ticketId: ticket.id, number },
         'Ticket created',
       );
+      // Automation may adjust the ticket (priority/category/team/agent) before we
+      // broadcast and notify, so those reflect the final state.
+      await applyAutomationOnCreate(ticket);
       emitToOrg(organizationId, SOCKET_EVENTS.TICKET_CREATED, ticket.toJSON());
       await notifyTicketAssigned(ticket, actorUserId);
       return ticket;
