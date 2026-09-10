@@ -988,3 +988,24 @@ quality automatically on every push.
 Most controls (helmet, tenant isolation with 404-on-cross-tenant, boundary
 validation, hashed secrets, forced-download, log redaction, no user enumeration)
 were built into earlier phases; this phase adds throttling and the written review.
+
+---
+
+## Phase 20 — Observability
+
+**What / why.** Make the running service measurable: metrics for scraping and a
+liveness probe distinct from readiness.
+
+- **`GET /metrics`** (Prometheus text) via `prom-client` on a dedicated registry:
+  default process metrics plus `http_requests_total` and
+  `http_request_duration_seconds`, labeled by method + status only (low
+  cardinality).
+- **`GET /api/health/live`** liveness (always 200 if the process is up), separate
+  from `GET /api/health` readiness (checks MongoDB). Orchestrators use liveness to
+  restart and readiness to route traffic.
+- Structured request logs already carry `requestId` and duration (Phase 0).
+
+```bash
+curl -s http://localhost:4000/metrics | head
+curl -s http://localhost:4000/api/health/live
+```
