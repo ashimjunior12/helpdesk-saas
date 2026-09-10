@@ -10,7 +10,9 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.ts\"",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "test:coverage": "jest --runInBand --coverage",
+    "test:ci": "jest --runInBand --ci"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
