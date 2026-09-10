@@ -39,6 +39,13 @@ export async function addMessage(
     'Message added',
   );
   emitToTicket(ticketId, SOCKET_EVENTS.MESSAGE_CREATED, message.toJSON());
+
+  // First agent reply stops the SLA first-response clock.
+  if (input.authorType === 'AGENT' && !ticket.firstRespondedAt) {
+    ticket.firstRespondedAt = new Date();
+    await ticket.save();
+  }
+
   await notifyTicketMessage(ticket, actorUserId);
   return message;
 }

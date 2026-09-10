@@ -3,10 +3,14 @@ import type { Redis } from 'ioredis';
 import { createRedisConnection, isQueueEnabled } from '../config/redis.js';
 import { logger } from '../utils/logger.js';
 import { createNotificationRecord } from '../modules/notifications/notifications.service.js';
+import { evaluateSlaBreaches } from '../modules/sla/sla.service.js';
 import { NOTIFICATIONS_QUEUE, type NotificationJobData } from './notifications.queue.js';
+import { SLA_QUEUE, scheduleSlaEvaluation } from './sla.queue.js';
 
 let notificationsWorker: Worker<NotificationJobData> | undefined;
+let slaWorker: Worker | undefined;
 let connection: Redis | undefined;
+let slaConnection: Redis | undefined;
 
 // Starts the background workers. A no-op when queues are disabled (no Redis), so
 // the same entrypoint works with or without Redis.
@@ -32,7 +36,27 @@ export function startWorkers(): void {
     );
   });
 
-  logger.info({ operation: 'workers.start', queue: NOTIFICATIONS_QUEUE }, 'Workers started');
+  slaConnection = createRedisConnection();
+  slaWorker = new Worker(
+    SLA_QUEUE,
+    async () => {
+      await evaluateSlaBreaches();
+    },
+    { connection: slaConnection },
+  );
+  slaWorker.on('failed', (job, err) => {
+    logger.error({ operation: 'worker.sla', jobId: job?.id, err }, 'SLA job failed');
+  });
+
+  // Best-effort scheduling; failure to register the repeatable job must not stop startup.
+  void scheduleSlaEvaluation().catch((err) => {
+    logger.error({ operation: 'sla.schedule', err }, 'Failed to schedule SLA evaluation');
+  });
+
+  logger.info(
+    { operation: 'workers.start', queues: [NOTIFICATIONS_QUEUE, SLA_QUEUE] },
+    'Workers started',
+  );
 }
 
 export async function stopWorkers(): Promise<void> {
@@ -40,8 +64,16 @@ export async function stopWorkers(): Promise<void> {
     await notificationsWorker.close();
     notificationsWorker = undefined;
   }
+  if (slaWorker) {
+    await slaWorker.close();
+    slaWorker = undefined;
+  }
   if (connection) {
     await connection.quit();
     connection = undefined;
+  }
+  if (slaConnection) {
+    await slaConnection.quit();
+    slaConnection = undefined;
   }
 }

@@ -5,6 +5,7 @@ import { connectDatabase, disconnectDatabase } from './config/database.js';
 import { initRealtime } from './sockets/index.js';
 import { startWorkers, stopWorkers } from './queues/startWorkers.js';
 import { closeNotificationsQueue } from './queues/notifications.queue.js';
+import { closeSlaQueue } from './queues/sla.queue.js';
 import { logger } from './utils/logger.js';
 
 /**
@@ -43,6 +44,7 @@ function setupGracefulShutdown(server: Server): void {
     server.close(async () => {
       await stopWorkers();
       await closeNotificationsQueue();
+      await closeSlaQueue();
       await disconnectDatabase();
       process.exit(0);
     });

@@ -11,6 +11,7 @@ import {
   notifyTicketAssigned,
   notifyTicketStatus,
 } from '../notifications/notifications.service.js';
+import { computeDueDates } from '../sla/sla.service.js';
 import type {
   AssignTicketInput,
   ChangeStatusInput,
@@ -61,12 +62,27 @@ export async function createTicket(
     await assertTeamInOrg(organizationId, input.teamId);
   }
 
+  const now = new Date();
+  const priority = input.priority ?? 'MEDIUM';
+  const { firstResponseDueAt, resolutionDueAt } = await computeDueDates(
+    organizationId,
+    priority,
+    now,
+  );
+
   // The atomic counter makes number collisions practically impossible; the retry
   // is a safety net against the rare race, backed by the unique index.
   for (let attempt = 0; attempt < CREATE_RETRIES; attempt += 1) {
     const number = await nextTicketNumber(organizationId);
     try {
-      const ticket = await TicketModel.create({ ...input, organizationId, number, status: 'OPEN' });
+      const ticket = await TicketModel.create({
+        ...input,
+        organizationId,
+        number,
+        status: 'OPEN',
+        firstResponseDueAt,
+        resolutionDueAt,
+      });
       logger.info(
         { operation: 'tickets.create', organizationId, ticketId: ticket.id, number },
         'Ticket created',
@@ -150,6 +166,12 @@ export async function changeStatus(
   }
 
   ticket.status = input.status;
+  // Track resolution time for SLA: set when resolved/closed, clear on reopen.
+  if (input.status === 'RESOLVED' || input.status === 'CLOSED') {
+    if (!ticket.resolvedAt) ticket.resolvedAt = new Date();
+  } else {
+    ticket.resolvedAt = null;
+  }
   await ticket.save();
   logger.info(
     { operation: 'tickets.status', organizationId, ticketId, status: input.status },
