@@ -17,6 +17,7 @@ import { notesRouter } from './modules/notes/notes.routes.js';
 import { notificationsRouter } from './modules/notifications/notifications.routes.js';
 import { slaRouter } from './modules/sla/sla.routes.js';
 import { attachmentsRouter } from './modules/attachments/attachments.routes.js';
+import { searchRouter } from './modules/search/search.routes.js';
 
 /**
  * Builds and configures the Express application.
@@ -58,6 +59,7 @@ export function createApp(): Application {
   app.use('/api/notifications', notificationsRouter);
   app.use('/api/sla-policy', slaRouter);
   app.use('/api/tickets/:ticketId/attachments', attachmentsRouter);
+  app.use('/api/search', searchRouter);
 
   // Unmatched routes and centralized error handling come last.
   app.use(notFound);
