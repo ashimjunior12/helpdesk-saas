@@ -953,3 +953,20 @@ curl -s -X POST http://localhost:4000/api/public/widget/$KEY/tickets \
 (Next.js) fetches the display config, themes itself with the org's primary color,
 and posts the form to the public endpoint - with real loading / error / success
 states. It is designed to be dropped into an iframe on the customer's site.
+
+---
+
+## Phase 18 — Testing Improvements
+
+**What / why.** Raise confidence that the modules work together, and enforce
+quality automatically on every push.
+
+- **End-to-end lifecycle test** (`tests/e2e/lifecycle.test.ts`): one journey -
+  register -> org -> agent -> customer -> ticket (assigned) -> agent reply +
+  internal note -> resolve -> notifications -> analytics -> search - asserting the
+  cross-module outcomes (note stays private, assignee notified, analytics/search
+  reflect the ticket).
+- **Coverage script:** `npm run test:coverage` (and `test:ci` for CI).
+- **CI** (`.github/workflows/ci.yml`): on push/PR to main, runs backend
+  lint + typecheck + tests (in-memory Mongo, no services needed) and frontend
+  typecheck + build.
