@@ -1009,3 +1009,28 @@ liveness probe distinct from readiness.
 curl -s http://localhost:4000/metrics | head
 curl -s http://localhost:4000/api/health/live
 ```
+
+---
+
+## Phase 21 — Docker + Deployment
+
+**What / why.** Package the whole stack so it runs anywhere with one command.
+
+- **Backend `Dockerfile`** (multi-stage): compile TypeScript, then run only prod
+  deps + `dist/` on `node:22-alpine` as the non-root `node` user, with an uploads
+  volume. **Frontend `Dockerfile`**: Next.js `standalone` output for a small image.
+- **`docker-compose.yml`** wires `mongo`, `redis`, `backend`, `frontend` with
+  health checks; the backend waits for Mongo/Redis to be healthy. Uploads and
+  Mongo data are named volumes. `.dockerignore` files keep images lean.
+- Secrets/URLs come from a root `.env` (see `.env.docker.example`); the
+  frontend's `NEXT_PUBLIC_API_BASE_URL` is a build arg (baked into the client).
+
+```bash
+cp .env.docker.example .env   # set JWT secrets
+docker compose up --build
+# frontend  -> http://localhost:3000  (widget at /widget?key=...)
+# backend   -> http://localhost:4000  (health at /api/health)
+```
+
+With this stack the app runs with Redis present, so notifications flow through
+BullMQ workers and the SLA breach job is scheduled automatically.
