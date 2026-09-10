@@ -787,3 +787,25 @@ curl -s -OJ http://localhost:4000/api/tickets/<ticketId>/attachments/<id>/downlo
 curl -s -X DELETE http://localhost:4000/api/tickets/<ticketId>/attachments/<id> \
   -H "Authorization: Bearer $ADMIN"
 ```
+
+---
+
+## Phase 13 — Search
+
+**What / why.** A single quick-search across the org: find a ticket or customer
+fast from one box.
+
+**Business logic.**
+- `GET /api/search?q=` matches tickets by subject/category (and by ticket number
+  when `q` is numeric) and customers by name/email, case-insensitively.
+- Results are org-scoped and capped (`limit`, default 5, max 20). Input is
+  regex-escaped, so a search term can never inject regex operators.
+
+```bash
+TOKEN="<org-scoped token>"
+curl -s "http://localhost:4000/api/search?q=login&limit=5" -H "Authorization: Bearer $TOKEN"
+# { "data": { "query": "login", "tickets": [...], "customers": [...] } }
+```
+
+Substring matching is used (better for quick-search than whole-token `$text`);
+switching to a Mongo text index or a dedicated search engine is a future option.
