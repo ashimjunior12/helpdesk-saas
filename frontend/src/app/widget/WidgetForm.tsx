@@ -91,7 +91,7 @@ export default function WidgetForm() {
 
         {ticketNumber !== null ? (
           <div className={styles.success}>
-            <p className={styles.successTitle}>Thanks — we got your message.</p>
+            <p className={styles.successTitle}>Thanks, we got your message.</p>
             <p className={styles.successBody}>
               Your request has been logged as ticket{' '}
               <span className={styles.ticketRef}>#{ticketNumber}</span>. We will reply by email.
