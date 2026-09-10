@@ -1,4 +1,4 @@
-# Walkthrough — Features, Business Logic & API
+# Walkthrough - Features, Business Logic & API
 
 A running guide to what the Helpdesk SaaS does so far, why each piece exists, and
 how to exercise it with `curl`. Updated as each phase lands.
@@ -20,7 +20,7 @@ npm run dev                  # http://localhost:4000
 
 ---
 
-## Phase 0 — Foundation
+## Phase 0 - Foundation
 
 **What / why.** The backbone the rest of the product is built on: a wired Express
 app, MongoDB connection lifecycle, centralized errors, structured logging, and a
@@ -48,7 +48,7 @@ curl -i http://localhost:4000/api/health
 
 ---
 
-## Phase 1 — Authentication
+## Phase 1 - Authentication
 
 **What / why.** Identity: users register, log in, and prove who they are on
 protected routes. Every later feature needs to know who is acting.
@@ -127,7 +127,7 @@ curl -s -X POST http://localhost:4000/api/auth/logout
 
 ---
 
-## Phase 2 — Organizations / Multi-Tenancy
+## Phase 2 - Organizations / Multi-Tenancy
 
 **What / why.** An organization is a tenant (a company using the helpdesk). Every
 user belongs to at most one organization, and all org-owned data will be strictly
@@ -139,7 +139,7 @@ access (IDOR/BOLA).
   and becomes its first member with role `ADMIN`.
 - Organization context (`organizationId`, `role`) is carried inside the access
   token, so tenant scoping needs no per-request database lookup. Creating an org
-  therefore **reissues tokens** — the client must switch to the returned tokens
+  therefore **reissues tokens** - the client must switch to the returned tokens
   (or call `refresh`) for the new context to take effect.
 - Cross-tenant lookups return `404`, never `403`, so the API never confirms that
   another tenant's resource exists.
@@ -201,7 +201,7 @@ added in Phase 3.)
 
 ---
 
-## Phase 3 — Users, Roles & Teams
+## Phase 3 - Users, Roles & Teams
 
 **What / why.** Turn an organization into a real team: manage its members,
 enforce roles on the backend, and group agents into teams for future ticket
@@ -290,7 +290,7 @@ member outside your organization; `403 FORBIDDEN` for an AGENT attempting to man
 
 ---
 
-## Phase 4 — Customers
+## Phase 4 - Customers
 
 **What / why.** Customers are the end-users who need support (distinct from
 `Users`, who are the org's staff). Each organization manages its own customer
@@ -360,7 +360,7 @@ curl -s -X DELETE http://localhost:4000/api/customers/<customerId> -H "Authoriza
 
 ---
 
-## Phase 5 — Tickets
+## Phase 5 - Tickets
 
 **What / why.** A ticket is a support request: it links a customer to a status,
 priority, and (optionally) an assigned agent and team, so the org can track and
@@ -456,7 +456,7 @@ curl -s -X DELETE http://localhost:4000/api/tickets/<ticketId> -H "Authorization
 
 ---
 
-## Phase 6 — Conversations & Messages
+## Phase 6 - Conversations & Messages
 
 **What / why.** The back-and-forth on a ticket. Messages are attached directly
 to the ticket (the ticket is the conversation), turning a static record into a
@@ -512,7 +512,7 @@ curl -s -X DELETE http://localhost:4000/api/tickets/<ticketId>/messages/<message
 
 ---
 
-## Phase 7 — Real-Time Messaging (Socket.IO)
+## Phase 7 - Real-Time Messaging (Socket.IO)
 
 **What / why.** Push live updates to connected agents (new messages, ticket
 changes) instead of polling. A Socket.IO server runs on the same HTTP server as
@@ -573,7 +573,7 @@ subscribed clients receive it as a `message:created` event in real time.
 
 ---
 
-## Phase 8 — Internal Notes
+## Phase 8 - Internal Notes
 
 **What / why.** Private, staff-only notes on a ticket (context, escalation
 reasoning) that the customer must never see.
@@ -625,7 +625,7 @@ public messages and never internal notes.
 
 ---
 
-## Phase 9 — Notifications
+## Phase 9 - Notifications
 
 **What / why.** Tell an agent when something needs them: a ticket assigned to
 them, a new message, or a status change. Stored per user (for a badge / unread
@@ -681,7 +681,7 @@ socket.on('notification:created', (n) => { badge.increment(); toast(n.title); })
 
 ---
 
-## Phase 10 — Redis + BullMQ
+## Phase 10 - Redis + BullMQ
 
 **What / why.** Move fan-out work (starting with notifications) off the request
 path into a background worker, so slow or bursty side-effects don't block the
@@ -717,7 +717,7 @@ worker pattern (retries, backoff, inline fallback) is what later async work
 
 ---
 
-## Phase 11 — SLA System
+## Phase 11 - SLA System
 
 **What / why.** Hold support to time targets: how fast a ticket should get a
 first response and be resolved, by priority. Breaches are flagged and the
@@ -755,7 +755,7 @@ in their JSON, so a dashboard can show due/at-risk/breached state.
 
 ---
 
-## Phase 12 — File Attachments
+## Phase 12 - File Attachments
 
 **What / why.** Attach files (screenshots, logs, documents) to a ticket.
 
@@ -790,7 +790,7 @@ curl -s -X DELETE http://localhost:4000/api/tickets/<ticketId>/attachments/<id> 
 
 ---
 
-## Phase 13 — Search
+## Phase 13 - Search
 
 **What / why.** A single quick-search across the org: find a ticket or customer
 fast from one box.
@@ -812,7 +812,7 @@ switching to a Mongo text index or a dedicated search engine is a future option.
 
 ---
 
-## Phase 14 — Analytics
+## Phase 14 - Analytics
 
 **What / why.** A dashboard summary of an org's support load and performance.
 
@@ -844,7 +844,7 @@ curl -s "http://localhost:4000/api/analytics/overview?days=30" -H "Authorization
 
 ---
 
-## Phase 15 — Automation
+## Phase 15 - Automation
 
 **What / why.** Let an org codify routing/triage rules so common tickets are
 handled automatically on creation (e.g. "subject contains refund -> URGENT,
@@ -877,7 +877,7 @@ Now creating a ticket whose subject contains "refund" comes out `URGENT` /
 
 ---
 
-## Phase 16 — Public API
+## Phase 16 - Public API
 
 **What / why.** Let external systems (a website backend, integrations) raise and
 read tickets programmatically with an API key, without a user login.
@@ -912,7 +912,7 @@ Rate limiting for this surface is added in the Phase 19 security pass.
 
 ---
 
-## Phase 17 — Customer Support Widget
+## Phase 17 - Customer Support Widget
 
 **What / why.** An embeddable support form customers use on the company's own
 website to raise a ticket, without any login.
@@ -956,7 +956,7 @@ states. It is designed to be dropped into an iframe on the customer's site.
 
 ---
 
-## Phase 18 — Testing Improvements
+## Phase 18 - Testing Improvements
 
 **What / why.** Raise confidence that the modules work together, and enforce
 quality automatically on every push.
@@ -973,7 +973,7 @@ quality automatically on every push.
 
 ---
 
-## Phase 19 — Security Review
+## Phase 19 - Security Review
 
 **What / why.** Close the abuse/brute-force gap and document the security posture.
 
@@ -991,7 +991,7 @@ were built into earlier phases; this phase adds throttling and the written revie
 
 ---
 
-## Phase 20 — Observability
+## Phase 20 - Observability
 
 **What / why.** Make the running service measurable: metrics for scraping and a
 liveness probe distinct from readiness.
@@ -1012,7 +1012,7 @@ curl -s http://localhost:4000/api/health/live
 
 ---
 
-## Phase 21 — Docker + Deployment
+## Phase 21 - Docker + Deployment
 
 **What / why.** Package the whole stack so it runs anywhere with one command.
 
@@ -1034,3 +1034,24 @@ docker compose up --build
 
 With this stack the app runs with Redis present, so notifications flow through
 BullMQ workers and the SLA breach job is scheduled automatically.
+
+---
+
+## Frontend UI
+
+The Next.js frontend is intentionally lean and professional, built on one
+cohesive design system rather than an ad hoc look.
+
+- **Design tokens** (`src/app/globals.css`): a small neutral palette plus a single
+  blue accent, consistent spacing, radius, and typography, with a light theme and
+  a `prefers-color-scheme` dark variant. No gradient hero blobs, glassmorphism, or
+  emojis.
+- **Landing / overview** (`/`): a top navigation, a concise hero, a live API
+  status chip (server-rendered from `/api/health`), a capabilities grid, and a
+  sample of the API surface. It communicates what the product does without filler.
+- **Support widget** (`/widget?key=<publicKey>`): a self-contained, accessible
+  form styled independently of the app theme (it is embedded in an iframe on
+  third-party sites). It fetches the org's display config, themes itself with the
+  org's primary color, and handles loading, error, and success states.
+
+Run the frontend with `npm run dev` in `frontend/` and open http://localhost:3000.

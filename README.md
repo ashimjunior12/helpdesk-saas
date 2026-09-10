@@ -33,6 +33,8 @@ internal notes, route work with automation, track SLAs, and view analytics.
   logs with request correlation ids and secret redaction.
 - **Rate limiting** on auth and public surfaces; **Docker Compose** for the whole
   stack; **CI** on every push.
+- **Frontend**: a clean Next.js UI on one cohesive design system (light/dark),
+  with a product overview and the embeddable support widget.
 
 ## Tech stack
 
@@ -110,9 +112,9 @@ Frontend (`/frontend`): `npm run dev`, `build`, `start`, `lint`, `typecheck`.
 
 ## Documentation
 
-- `docs/WALKTHROUGH.md` — every feature explained with the business logic behind
+- `docs/WALKTHROUGH.md` - every feature explained with the business logic behind
   it and runnable `curl` examples (the fastest way to understand the API).
-- `docs/SECURITY.md` — the security posture by area, plus known gaps.
+- `docs/SECURITY.md` - the security posture by area, plus known gaps.
 
 ## Testing
 
@@ -125,7 +127,7 @@ cd backend && npm test
 
 ## Status
 
-All planned phases (0–22) are implemented on `main`: foundation, auth,
+All planned phases (0-22) are implemented on `main`: foundation, auth,
 organizations/multi-tenancy, users/roles/teams, customers, tickets,
 conversations, real-time, internal notes, notifications, Redis + BullMQ, SLA,
 attachments, search, analytics, automation, public API, support widget, testing,

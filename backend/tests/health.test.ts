@@ -7,7 +7,7 @@ import { createApp } from '../src/app.js';
  *
  * These run against the fully wired Express app but without a live MongoDB
  * connection, so the health probe deterministically reports the database as
- * "down" and returns 503 — verifying the readiness logic and the standard
+ * "down" and returns 503 - verifying the readiness logic and the standard
  * response envelopes end to end.
  */
 describe('Foundation', () => {
