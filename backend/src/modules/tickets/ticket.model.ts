@@ -25,6 +25,12 @@ export interface Ticket {
   customerId: Types.ObjectId;
   assignedAgentId: Types.ObjectId | null;
   teamId: Types.ObjectId | null;
+  firstResponseDueAt: Date | null;
+  resolutionDueAt: Date | null;
+  firstRespondedAt: Date | null;
+  resolvedAt: Date | null;
+  firstResponseBreached: boolean;
+  resolutionBreached: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -60,6 +66,12 @@ const ticketSchema = new Schema<Ticket>(
       ref: 'Team',
       default: null,
     },
+    firstResponseDueAt: { type: Date, default: null },
+    resolutionDueAt: { type: Date, default: null },
+    firstRespondedAt: { type: Date, default: null },
+    resolvedAt: { type: Date, default: null },
+    firstResponseBreached: { type: Boolean, default: false },
+    resolutionBreached: { type: Boolean, default: false },
   },
   {
     timestamps: true,

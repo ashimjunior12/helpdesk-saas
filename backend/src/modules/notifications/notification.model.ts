@@ -1,6 +1,11 @@
 import { Schema, model, Types, type HydratedDocument } from 'mongoose';
 
-export const NOTIFICATION_TYPES = ['TICKET_ASSIGNED', 'TICKET_MESSAGE', 'TICKET_STATUS'] as const;
+export const NOTIFICATION_TYPES = [
+  'TICKET_ASSIGNED',
+  'TICKET_MESSAGE',
+  'TICKET_STATUS',
+  'SLA_BREACH',
+] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 export interface Notification {
