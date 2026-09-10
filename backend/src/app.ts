@@ -5,6 +5,7 @@ import { env } from './config/env.js';
 import { httpLogger, requestId } from './middleware/requestContext.js';
 import { notFound } from './middleware/notFound.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { metricsHandler, metricsMiddleware } from './observability/metrics.js';
 import { healthRouter } from './modules/health/health.routes.js';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { organizationRouter } from './modules/organizations/organization.routes.js';
@@ -56,6 +57,10 @@ export function createApp(): Application {
 
   app.use(requestId);
   app.use(httpLogger);
+  app.use(metricsMiddleware);
+
+  // Prometheus scrape endpoint.
+  app.get('/metrics', metricsHandler);
 
   // Feature routers mount under /api. More modules will be added in later phases.
   app.use('/api/health', healthRouter);
