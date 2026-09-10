@@ -118,6 +118,22 @@ export function notifyTicketStatus(ticket: TicketDocument, actorUserId: string):
   );
 }
 
+// SLA breaches have no acting user; the assignee (if any) is notified.
+export function notifySlaBreach(ticket: TicketDocument, kind: 'first response' | 'resolution'): Promise<void> {
+  if (!ticket.assignedAgentId) return Promise.resolve();
+  return safeNotify(() =>
+    dispatchNotification({
+      organizationId: String(ticket.organizationId),
+      userId: String(ticket.assignedAgentId),
+      type: 'SLA_BREACH',
+      title: `SLA ${kind} breach on ticket #${ticket.number}`,
+      body: ticket.subject,
+      ticketId: ticket.id,
+      ticketNumber: ticket.number,
+    }),
+  );
+}
+
 export async function listNotifications(
   organizationId: string,
   userId: string,
