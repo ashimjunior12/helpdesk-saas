@@ -20,6 +20,8 @@ import { attachmentsRouter } from './modules/attachments/attachments.routes.js';
 import { searchRouter } from './modules/search/search.routes.js';
 import { analyticsRouter } from './modules/analytics/analytics.routes.js';
 import { automationRouter } from './modules/automation/automation.routes.js';
+import { apiKeysRouter } from './modules/apikeys/apikeys.routes.js';
+import { publicApiRouter } from './modules/public/public.routes.js';
 
 /**
  * Builds and configures the Express application.
@@ -64,6 +66,8 @@ export function createApp(): Application {
   app.use('/api/search', searchRouter);
   app.use('/api/analytics', analyticsRouter);
   app.use('/api/automation-rules', automationRouter);
+  app.use('/api/api-keys', apiKeysRouter);
+  app.use('/api/public/v1', publicApiRouter);
 
   // Unmatched routes and centralized error handling come last.
   app.use(notFound);

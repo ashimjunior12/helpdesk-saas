@@ -8,6 +8,8 @@ declare global {
       id: string;
       /** Authenticated user, set by the requireAuth middleware on protected routes. */
       user?: AuthenticatedUser;
+      /** API-key context, set by the apiKeyAuth middleware on public API routes. */
+      apiKey?: { id: string; organizationId: string };
     }
   }
 }
