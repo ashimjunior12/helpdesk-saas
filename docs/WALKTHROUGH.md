@@ -970,3 +970,21 @@ quality automatically on every push.
 - **CI** (`.github/workflows/ci.yml`): on push/PR to main, runs backend
   lint + typecheck + tests (in-memory Mongo, no services needed) and frontend
   typecheck + build.
+
+---
+
+## Phase 19 — Security Review
+
+**What / why.** Close the abuse/brute-force gap and document the security posture.
+
+- **Rate limiting** (`express-rate-limit`, IP-based): auth `20/min`, public API
+  `100/min`, public widget `20/min`; over-limit returns the standard
+  `429 RATE_LIMITED` envelope. In-memory store (single instance; use Redis for
+  multi-instance). Skipped in the test environment so suites stay deterministic.
+- **`docs/SECURITY.md`** documents auth, authorization/multi-tenancy, validation,
+  rate limiting, secrets/API keys, file uploads, transport/headers, logging
+  redaction, and known gaps.
+
+Most controls (helmet, tenant isolation with 404-on-cross-tenant, boundary
+validation, hashed secrets, forced-download, log redaction, no user enumeration)
+were built into earlier phases; this phase adds throttling and the written review.
