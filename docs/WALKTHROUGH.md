@@ -714,3 +714,41 @@ There are no new HTTP endpoints in this phase - the API surface is identical;
 notifications simply flow through the queue when Redis is present. This queue +
 worker pattern (retries, backoff, inline fallback) is what later async work
 (SLA checks, email) will reuse.
+
+---
+
+## Phase 11 — SLA System
+
+**What / why.** Hold support to time targets: how fast a ticket should get a
+first response and be resolved, by priority. Breaches are flagged and the
+assignee is notified.
+
+**Business logic.**
+- Each org has one SLA policy: per-priority `firstResponseMins` and
+  `resolutionMins` (sensible defaults until customized; `ADMIN` edits it).
+- On creation a ticket gets `firstResponseDueAt` / `resolutionDueAt` from the
+  policy and its priority. The first AGENT message sets `firstRespondedAt`;
+  resolving/closing sets `resolvedAt` (reopening clears it).
+- A repeatable BullMQ job (every minute, when Redis is configured) evaluates
+  breaches: an unmet, still-open ticket past its due time is flagged
+  (`firstResponseBreached` / `resolutionBreached`) once and its assignee gets an
+  `SLA_BREACH` notification. The evaluation is idempotent.
+
+### SLA policy (GET any role, PUT ADMIN)
+
+```bash
+ADMIN="<org-scoped admin token>"
+curl -s http://localhost:4000/api/sla-policy -H "Authorization: Bearer $ADMIN"
+
+curl -s -X PUT http://localhost:4000/api/sla-policy \
+  -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
+  -d '{"targets":{
+        "URGENT":{"firstResponseMins":5,"resolutionMins":60},
+        "HIGH":{"firstResponseMins":30,"resolutionMins":240},
+        "MEDIUM":{"firstResponseMins":120,"resolutionMins":720},
+        "LOW":{"firstResponseMins":240,"resolutionMins":1440}}}'
+```
+
+Tickets now carry SLA fields (`firstResponseDueAt`, `resolutionDueAt`,
+`firstRespondedAt`, `resolvedAt`, `firstResponseBreached`, `resolutionBreached`)
+in their JSON, so a dashboard can show due/at-risk/breached state.
