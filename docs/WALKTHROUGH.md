@@ -841,3 +841,36 @@ curl -s "http://localhost:4000/api/analytics/overview?days=30" -H "Authorization
   }
 }
 ```
+
+---
+
+## Phase 15 — Automation
+
+**What / why.** Let an org codify routing/triage rules so common tickets are
+handled automatically on creation (e.g. "subject contains refund -> URGENT,
+category billing, assign Billing team").
+
+**Business logic.**
+- A rule has a trigger (`TICKET_CREATED`), AND-conditions on `priority` /
+  `category` / `subject` (operators `eq` / `contains` / `in`), and actions
+  (`SET_PRIORITY`, `SET_CATEGORY`, `ASSIGN_TEAM`, `ASSIGN_AGENT`).
+- On ticket creation the engine runs enabled rules in order; every matching
+  rule's actions are applied. If priority changes, SLA due dates are recomputed.
+  The engine is best-effort - a failure never fails ticket creation.
+- Action targets (team/agent) are validated to the org when a rule is saved.
+- Manage: `ADMIN`; read: any role.
+
+```bash
+ADMIN="<org-scoped admin token>"
+curl -s -X POST http://localhost:4000/api/automation-rules \
+  -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
+  -d '{"name":"Urgent refunds",
+       "conditions":[{"field":"subject","operator":"contains","value":["refund"]}],
+       "actions":[{"type":"SET_PRIORITY","value":"URGENT"},
+                  {"type":"SET_CATEGORY","value":"billing"}]}'
+
+curl -s http://localhost:4000/api/automation-rules -H "Authorization: Bearer $ADMIN"
+```
+
+Now creating a ticket whose subject contains "refund" comes out `URGENT` /
+`billing` automatically.
