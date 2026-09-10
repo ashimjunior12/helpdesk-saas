@@ -30,6 +30,11 @@ const envSchema = z.object({
   // on this Redis. When unset, those jobs run inline, so the app works without
   // Redis in development and tests.
   REDIS_URL: z.string().min(1).optional(),
+
+  // File attachments: where uploaded files are stored on disk, and the per-file
+  // size cap in megabytes.
+  UPLOAD_DIR: z.string().min(1).default('uploads'),
+  MAX_UPLOAD_MB: z.coerce.number().int().positive().max(100).default(10),
 });
 
 const parsed = envSchema.safeParse(process.env);

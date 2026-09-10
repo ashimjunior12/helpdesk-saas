@@ -29,3 +29,6 @@ coverage/
 # Local-only (not pushed): project memory & tooling
 .claude/
 docs/development/
+
+# Uploaded files (local storage)
+uploads/
