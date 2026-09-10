@@ -752,3 +752,38 @@ curl -s -X PUT http://localhost:4000/api/sla-policy \
 Tickets now carry SLA fields (`firstResponseDueAt`, `resolutionDueAt`,
 `firstRespondedAt`, `resolvedAt`, `firstResponseBreached`, `resolutionBreached`)
 in their JSON, so a dashboard can show due/at-risk/breached state.
+
+---
+
+## Phase 12 — File Attachments
+
+**What / why.** Attach files (screenshots, logs, documents) to a ticket.
+
+**Business logic.**
+- Files are stored on disk under `UPLOAD_DIR` with a generated name; the DB keeps
+  metadata (original filename, mime type, size, uploader). The on-disk name is
+  never exposed.
+- Uploads are validated: a MIME allowlist (images, pdf, text/csv, zip, office
+  docs) and a size cap (`MAX_UPLOAD_MB`, default 10). Rejections return `400`.
+- Downloads are always served as `Content-Disposition: attachment` (never inline),
+  avoiding stored-XSS via HTML/SVG.
+- Everything is tenant-scoped through the ticket (another org -> 404). Upload/list
+  = any staff role; delete = `ADMIN`/`MANAGER` (also removes the file from disk).
+
+```bash
+ADMIN="<org-scoped token>"
+# Upload (multipart field name: file)
+curl -s -X POST http://localhost:4000/api/tickets/<ticketId>/attachments \
+  -H "Authorization: Bearer $ADMIN" -F 'file=@./screenshot.png'
+
+# List
+curl -s http://localhost:4000/api/tickets/<ticketId>/attachments -H "Authorization: Bearer $ADMIN"
+
+# Download (streams the file)
+curl -s -OJ http://localhost:4000/api/tickets/<ticketId>/attachments/<id>/download \
+  -H "Authorization: Bearer $ADMIN"
+
+# Delete (ADMIN/MANAGER)
+curl -s -X DELETE http://localhost:4000/api/tickets/<ticketId>/attachments/<id> \
+  -H "Authorization: Bearer $ADMIN"
+```
