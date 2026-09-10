@@ -22,6 +22,7 @@ import { analyticsRouter } from './modules/analytics/analytics.routes.js';
 import { automationRouter } from './modules/automation/automation.routes.js';
 import { apiKeysRouter } from './modules/apikeys/apikeys.routes.js';
 import { publicApiRouter } from './modules/public/public.routes.js';
+import { widgetConfigRouter, publicWidgetRouter } from './modules/widget/widget.routes.js';
 
 /**
  * Builds and configures the Express application.
@@ -38,6 +39,12 @@ export function createApp(): Application {
   app.set('trust proxy', 1);
 
   app.use(helmet());
+
+  // The public widget is embedded on arbitrary customer sites, so it is mounted
+  // ahead of the app's restrictive CORS with its own permissive CORS and JSON
+  // parsing (so cross-origin preflight succeeds for these routes only).
+  app.use('/api/public/widget', express.json({ limit: '100kb' }), publicWidgetRouter);
+
   app.use(
     cors({
       origin: env.corsOrigins,
@@ -68,6 +75,7 @@ export function createApp(): Application {
   app.use('/api/automation-rules', automationRouter);
   app.use('/api/api-keys', apiKeysRouter);
   app.use('/api/public/v1', publicApiRouter);
+  app.use('/api/widget-config', widgetConfigRouter);
 
   // Unmatched routes and centralized error handling come last.
   app.use(notFound);
