@@ -874,3 +874,38 @@ curl -s http://localhost:4000/api/automation-rules -H "Authorization: Bearer $AD
 
 Now creating a ticket whose subject contains "refund" comes out `URGENT` /
 `billing` automatically.
+
+---
+
+## Phase 16 — Public API
+
+**What / why.** Let external systems (a website backend, integrations) raise and
+read tickets programmatically with an API key, without a user login.
+
+**Business logic.**
+- An `ADMIN` mints API keys through the normal authenticated API. The raw key
+  (`hlpk_...`) is shown once; only a SHA-256 hash + a display prefix are stored.
+  Keys can be listed and revoked.
+- The public surface lives at `/api/public/v1`, authenticated by an `x-api-key`
+  header. Everything is scoped to the key's org; a missing/invalid/revoked key
+  returns `401`.
+- Creating a ticket by API takes a customer `{ email, name }` and finds-or-creates
+  that customer in the org, then creates the ticket (automation and SLA still
+  apply). No acting user, so no self-notification.
+
+```bash
+ADMIN="<org-scoped admin token>"
+# Mint a key (copy data.key now - it is not shown again)
+curl -s -X POST http://localhost:4000/api/api-keys \
+  -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' -d '{"name":"Website"}'
+
+KEY="hlpk_..."
+# Create a ticket via the public API
+curl -s -X POST http://localhost:4000/api/public/v1/tickets \
+  -H "x-api-key: $KEY" -H 'Content-Type: application/json' \
+  -d '{"customer":{"email":"buyer@example.com","name":"Buyer"},"subject":"Order issue","priority":"HIGH"}'
+
+curl -s http://localhost:4000/api/public/v1/tickets -H "x-api-key: $KEY"
+```
+
+Rate limiting for this surface is added in the Phase 19 security pass.
