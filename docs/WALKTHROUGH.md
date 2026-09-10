@@ -809,3 +809,35 @@ curl -s "http://localhost:4000/api/search?q=login&limit=5" -H "Authorization: Be
 
 Substring matching is used (better for quick-search than whole-token `$text`);
 switching to a Mongo text index or a dedicated search engine is a future option.
+
+---
+
+## Phase 14 — Analytics
+
+**What / why.** A dashboard summary of an org's support load and performance.
+
+**Business logic.**
+- `GET /api/analytics/overview?days=30` returns, for the caller's org: totals
+  (all tickets, currently open), counts by status and by priority, SLA breach
+  counts, average first-response and resolution times (ms), and a created-per-day
+  series over the last `days`.
+- Computed in a single MongoDB `$facet` aggregation, org-scoped. Any role reads.
+
+```bash
+TOKEN="<org-scoped token>"
+curl -s "http://localhost:4000/api/analytics/overview?days=30" -H "Authorization: Bearer $TOKEN"
+```
+
+```json
+{
+  "data": {
+    "totals": { "tickets": 2, "open": 1 },
+    "byStatus": { "OPEN": 1, "PENDING": 0, "RESOLVED": 1, "CLOSED": 0 },
+    "byPriority": { "LOW": 1, "MEDIUM": 0, "HIGH": 1, "URGENT": 0 },
+    "sla": { "firstResponseBreached": 0, "resolutionBreached": 0 },
+    "avgFirstResponseMs": null,
+    "avgResolutionMs": 1234,
+    "createdSeries": [ { "date": "2026-09-10", "count": 2 } ]
+  }
+}
+```
