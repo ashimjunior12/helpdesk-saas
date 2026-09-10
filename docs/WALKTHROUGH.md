@@ -909,3 +909,47 @@ curl -s http://localhost:4000/api/public/v1/tickets -H "x-api-key: $KEY"
 ```
 
 Rate limiting for this surface is added in the Phase 19 security pass.
+
+---
+
+## Phase 17 — Customer Support Widget
+
+**What / why.** An embeddable support form customers use on the company's own
+website to raise a ticket, without any login.
+
+**Business logic.**
+- Each org has a `WidgetConfig` with a **public** (non-secret) key that is safe to
+  embed, plus display settings (title, welcome message, primary color, enabled).
+  `ADMIN` reads/updates it and can rotate the key.
+- Public, unauthenticated endpoints keyed by the public key (with their own
+  permissive CORS so they work embedded on any origin): fetch display config and
+  submit a ticket. Submission finds-or-creates the customer by email and creates
+  the ticket (automation + SLA apply). The response is a minimal confirmation
+  (ticket number only) - no internal fields leak to the anonymous caller.
+- A disabled widget or unknown/rotated key returns `404`.
+
+Admin config (JWT, ADMIN):
+
+```bash
+ADMIN="<org-scoped admin token>"
+curl -s http://localhost:4000/api/widget-config -H "Authorization: Bearer $ADMIN"
+curl -s -X PUT http://localhost:4000/api/widget-config -H "Authorization: Bearer $ADMIN" \
+  -H 'Content-Type: application/json' -d '{"title":"Talk to us","primaryColor":"#111827"}'
+curl -s -X POST http://localhost:4000/api/widget-config/rotate-key -H "Authorization: Bearer $ADMIN"
+```
+
+Public (embedded, `wgt_...` public key):
+
+```bash
+KEY="wgt_..."
+curl -s http://localhost:4000/api/public/widget/$KEY/config
+curl -s -X POST http://localhost:4000/api/public/widget/$KEY/tickets \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Sam","email":"sam@buyer.com","subject":"Broken link","message":"The docs link 404s."}'
+# { "data": { "ticketNumber": 12 } }
+```
+
+**Frontend.** A clean, accessible widget page at `/widget?key=<publicKey>`
+(Next.js) fetches the display config, themes itself with the org's primary color,
+and posts the form to the public endpoint - with real loading / error / success
+states. It is designed to be dropped into an iframe on the customer's site.
