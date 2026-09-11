@@ -6,6 +6,7 @@ import { initRealtime } from './sockets/index.js';
 import { startWorkers, stopWorkers } from './queues/startWorkers.js';
 import { closeNotificationsQueue } from './queues/notifications.queue.js';
 import { closeSlaQueue } from './queues/sla.queue.js';
+import { ensureSuperAdmin } from './modules/platform/seedSuperAdmin.js';
 import { logger } from './utils/logger.js';
 
 /**
@@ -15,6 +16,7 @@ import { logger } from './utils/logger.js';
  */
 async function start(): Promise<void> {
   await connectDatabase();
+  await ensureSuperAdmin();
 
   const app = createApp();
   const server: Server = app.listen(env.PORT, () => {

@@ -12,7 +12,7 @@ const envSchema = z.object({
     .default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
   MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
-  CORS_ORIGIN: z.string().default('http://localhost:3000'),
+  CORS_ORIGIN: z.string().default('http://localhost:3001'),
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),
@@ -35,6 +35,11 @@ const envSchema = z.object({
   // size cap in megabytes.
   UPLOAD_DIR: z.string().min(1).default('uploads'),
   MAX_UPLOAD_MB: z.coerce.number().int().positive().max(100).default(10),
+
+  // Platform super admin, seeded at startup if no SUPER_ADMIN exists. Change the
+  // password after first login.
+  SUPER_ADMIN_EMAIL: z.string().trim().toLowerCase().email().default('ashimjunior12@gmail.com'),
+  SUPER_ADMIN_PASSWORD: z.string().min(6).default('Random123'),
 });
 
 const parsed = envSchema.safeParse(process.env);

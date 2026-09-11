@@ -1,7 +1,13 @@
 import { Schema, model, Types, type HydratedDocument } from 'mongoose';
 
+// Organization-level roles (used for org membership and org authorization).
 export const USER_ROLES = ['ADMIN', 'MANAGER', 'AGENT'] as const;
-export type UserRole = (typeof USER_ROLES)[number];
+export type OrgRole = (typeof USER_ROLES)[number];
+
+// All role values, including the platform-level SUPER_ADMIN who sits above every
+// organization and provisions organizations and their admins/managers.
+export const ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'AGENT'] as const;
+export type UserRole = (typeof ROLES)[number];
 
 export interface User {
   email: string;
@@ -45,7 +51,7 @@ const userSchema = new Schema<User>(
     },
     role: {
       type: String,
-      enum: USER_ROLES,
+      enum: ROLES,
       default: null,
     },
     isActive: {
