@@ -1060,3 +1060,95 @@ h4 {
 code {
   font-family: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
+
+/* ---------- Widget settings: live preview ---------- */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+}
+.status-pill .d {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.status-on { color: #067647; background: #ecfdf3; border-color: #d1fadf; }
+.status-on .d { background: #16a34a; }
+.status-off { color: #b42318; background: #fef3f2; border-color: #fee4e2; }
+.status-off .d { background: #dc2626; }
+
+.wpreview {
+  position: relative;
+  min-height: 260px;
+  border-radius: 12px;
+  background:
+    radial-gradient(120% 100% at 50% 0%, color-mix(in srgb, var(--wc) 12%, transparent), transparent),
+    var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 18px;
+  overflow: hidden;
+}
+.wp-card {
+  width: 250px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: var(--shadow-md);
+  border: 1px solid #e6e8ec;
+  margin: 0 auto;
+}
+.wp-header {
+  background: var(--wc);
+  color: #fff;
+  padding: 14px 16px;
+}
+.wp-header .t {
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+.wp-header .w {
+  font-size: 0.74rem;
+  opacity: 0.9;
+  margin-top: 3px;
+  line-height: 1.35;
+}
+.wp-body {
+  padding: 14px 16px;
+  background: #fff;
+}
+.wp-input {
+  height: 30px;
+  border-radius: 7px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 9px;
+}
+.wp-input.tall { height: 52px; }
+.wp-btn {
+  height: 34px;
+  border-radius: 8px;
+  background: var(--wc);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: grid;
+  place-items: center;
+}
+.wp-launcher {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--wc);
+  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.28);
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
