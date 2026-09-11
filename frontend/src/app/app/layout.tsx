@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { SocketProvider } from '@/lib/socket';
+import { ImpersonationProvider, useImpersonation } from '@/lib/impersonation';
 import { ApiError } from '@/lib/api';
 import { NotificationsBell } from '@/components/NotificationsBell';
 import { Avatar } from '@/components/Avatar';
@@ -19,22 +20,34 @@ const ORG_NAV = [
 const PLATFORM_NAV = [{ href: '/app/platform', label: 'Organizations', icon: GridIcon, exact: false }];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
+  return (
+    <ImpersonationProvider>
+      <AppInner>{children}</AppInner>
+    </ImpersonationProvider>
+  );
+}
+
+function AppInner({ children }: { children: ReactNode }) {
   const { user, loading, logout } = useAuth();
+  const { activeOrg, exitOrg } = useImpersonation();
   const router = useRouter();
   const pathname = usePathname();
 
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const onPlatform = pathname.startsWith('/app/platform');
+  const impersonating = isSuperAdmin && !onPlatform && Boolean(activeOrg);
 
   useEffect(() => {
     if (!loading && !user) router.replace('/login');
   }, [loading, user, router]);
 
-  // Keep the super admin inside the platform area (they have no organization).
+  // A super admin off the platform pages without an org selected goes back to
+  // the platform console.
   useEffect(() => {
-    if (!loading && isSuperAdmin && !pathname.startsWith('/app/platform')) {
+    if (!loading && isSuperAdmin && !onPlatform && !activeOrg) {
       router.replace('/app/platform');
     }
-  }, [loading, isSuperAdmin, pathname, router]);
+  }, [loading, isSuperAdmin, onPlatform, activeOrg, router]);
 
   if (loading || !user) {
     return (
@@ -48,9 +61,19 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     return <CreateOrganization />;
   }
 
-  const nav = isSuperAdmin ? PLATFORM_NAV : ORG_NAV;
-  const title = nav.find((n) => (n.exact ? pathname === n.href : pathname.startsWith(n.href)))?.label ??
-    (isSuperAdmin ? 'Organizations' : 'Overview');
+  if (isSuperAdmin && !onPlatform && !activeOrg) {
+    return (
+      <div className="center">
+        <div className="spinner" />
+      </div>
+    );
+  }
+
+  const platformMode = isSuperAdmin && onPlatform;
+  const nav = platformMode ? PLATFORM_NAV : ORG_NAV;
+  const title =
+    nav.find((n) => (n.exact ? pathname === n.href : pathname.startsWith(n.href)))?.label ??
+    (platformMode ? 'Organizations' : 'Overview');
 
   const shell = (
     <div className="shell">
@@ -69,6 +92,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </Link>
           );
         })}
+        {isSuperAdmin && !platformMode && (
+          <button
+            className="nav-item"
+            style={{ background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer' }}
+            onClick={() => {
+              exitOrg();
+              router.push('/app/platform');
+            }}
+          >
+            <GridIcon className="nav-icon" /> All organizations
+          </button>
+        )}
         <div className="side-foot">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
             <Avatar name={user.email} size={30} />
@@ -91,6 +126,22 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="main">
+        {impersonating && (
+          <div className="impersonation-banner">
+            <span>
+              Viewing <strong>{activeOrg?.name}</strong> as super admin
+            </span>
+            <button
+              className="btn btn-sm"
+              onClick={() => {
+                exitOrg();
+                router.push('/app/platform');
+              }}
+            >
+              Exit to platform
+            </button>
+          </div>
+        )}
         <header className="topbar">
           <h1>{title}</h1>
           <div className="topbar-right">{!isSuperAdmin && <NotificationsBell />}</div>
@@ -100,8 +151,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </div>
   );
 
-  // Sockets are an org-user feature; the super admin does not need one.
-  return isSuperAdmin ? shell : <SocketProvider>{shell}</SocketProvider>;
+  return platformMode ? shell : <SocketProvider>{shell}</SocketProvider>;
 }
 
 function CreateOrganization() {

@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { apiFetch, ApiError } from '@/lib/api';
+import { useImpersonation } from '@/lib/impersonation';
 import { Avatar, RoleBadge } from '@/components/Avatar';
-import { ArrowLeftIcon, PlusIcon } from '@/components/icons';
+import { ArrowLeftIcon, PlusIcon, TicketIcon } from '@/components/icons';
 import type { Member, Organization, OrgRole } from '@/lib/types';
 
 export default function PlatformOrgPage() {
   const router = useRouter();
+  const { enterOrg } = useImpersonation();
   const orgId = useParams().orgId as string;
 
   const [org, setOrg] = useState<Organization | null>(null);
@@ -56,9 +58,20 @@ export default function PlatformOrgPage() {
             <p>{users.length} {users.length === 1 ? 'member' : 'members'}</p>
           </div>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowNew(true)}>
-          <PlusIcon /> Add member
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            className="btn btn-secondary"
+            onClick={() => {
+              if (org) enterOrg({ id: org.id, name: org.name });
+              router.push('/app');
+            }}
+          >
+            <TicketIcon /> Open dashboard
+          </button>
+          <button className="btn btn-primary" onClick={() => setShowNew(true)}>
+            <PlusIcon /> Add member
+          </button>
+        </div>
       </div>
 
       {users.length === 0 ? (

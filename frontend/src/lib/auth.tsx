@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { apiFetch, clearTokens, getAccessToken, setTokens } from './api';
+import { apiFetch, clearActiveOrg, clearTokens, getAccessToken, setTokens } from './api';
 import type { AuthUser } from './types';
 
 interface AuthTokens {
@@ -94,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     clearTokens();
+    clearActiveOrg();
     setUser(null);
   }, []);
 

@@ -3,6 +3,41 @@ export const API_BASE_URL =
 
 const ACCESS_KEY = 'hd_access';
 const REFRESH_KEY = 'hd_refresh';
+const ACTIVE_ORG_KEY = 'hd_active_org';
+
+export interface ActiveOrg {
+  id: string;
+  name: string;
+}
+
+// The organization a SUPER_ADMIN is currently acting inside. Sent as
+// X-Organization-Id so org-scoped endpoints operate on that org. Unused by
+// normal org users (their org comes from the token).
+export function getActiveOrg(): ActiveOrg | null {
+  const raw = read(ACTIVE_ORG_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as ActiveOrg;
+  } catch {
+    return null;
+  }
+}
+
+export function setActiveOrg(org: ActiveOrg): void {
+  try {
+    window.localStorage.setItem(ACTIVE_ORG_KEY, JSON.stringify(org));
+  } catch {
+    // ignore
+  }
+}
+
+export function clearActiveOrg(): void {
+  try {
+    window.localStorage.removeItem(ACTIVE_ORG_KEY);
+  } catch {
+    // ignore
+  }
+}
 
 function read(key: string): string | null {
   try {
@@ -83,6 +118,8 @@ export async function apiFetch<T = unknown>(path: string, options: Options = {})
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   const token = getAccessToken();
   if (auth && token) headers.Authorization = `Bearer ${token}`;
+  const activeOrg = getActiveOrg();
+  if (auth && activeOrg) headers['X-Organization-Id'] = activeOrg.id;
 
   const res = await fetch(`${API_BASE_URL}${path}`, {
     method,

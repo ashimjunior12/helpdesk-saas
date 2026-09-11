@@ -1021,3 +1021,23 @@ h4 {
 .brand-mark-platform {
   background: linear-gradient(135deg, #6366f1, #a855f7);
 }
+
+/* ---------- Super-admin impersonation banner ---------- */
+.impersonation-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 24px;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+  color: #fff;
+  font-size: 0.85rem;
+}
+.impersonation-banner .btn {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.impersonation-banner .btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
