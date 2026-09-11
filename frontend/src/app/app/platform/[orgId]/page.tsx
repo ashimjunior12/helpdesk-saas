@@ -36,6 +36,16 @@ export default function PlatformOrgPage() {
     void load();
   }, [load]);
 
+  async function removeUser(userId: string, name: string) {
+    if (!window.confirm(`Remove ${name} from this organization? This cannot be undone.`)) return;
+    try {
+      await apiFetch(`/api/platform/organizations/${orgId}/users/${userId}`, { method: 'DELETE' });
+      await load();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? err.message : 'Could not remove the member.');
+    }
+  }
+
   if (loading) {
     return (
       <div className="center">
@@ -90,6 +100,13 @@ export default function PlatformOrgPage() {
               <span className="uspacer" />
               {!u.isActive && <span className="badge badge-CLOSED">Disabled</span>}
               <RoleBadge role={u.role} />
+              <button
+                className="btn btn-ghost btn-sm"
+                style={{ color: '#dc2626' }}
+                onClick={() => removeUser(u.id, u.name)}
+              >
+                Remove
+              </button>
             </div>
           ))}
         </div>
