@@ -6,8 +6,8 @@ services:
     restart: unless-stopped
     volumes:
       - mongo-data:/data/db
-    ports:
-      - '27017:27017'
+    # Not published to the host (the backend reaches it over the internal
+    # network); avoids clashing with a local MongoDB on 27017.
     healthcheck:
       test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping')"]
       interval: 10s
@@ -17,8 +17,8 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    ports:
-      - '6379:6379'
+    # Not published to the host (internal network only); avoids clashing with a
+    # local Redis on 6379.
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
@@ -38,7 +38,7 @@ services:
       PORT: 4000
       MONGODB_URI: mongodb://mongo:27017/helpdesk
       REDIS_URL: redis://redis:6379
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3001}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET}
     volumes:
@@ -61,7 +61,7 @@ services:
     depends_on:
       - backend
     ports:
-      - '3001:3000'
+      - '3000:3000'
 
 volumes:
   mongo-data:
