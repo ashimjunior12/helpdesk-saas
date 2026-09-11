@@ -1039,19 +1039,32 @@ BullMQ workers and the SLA breach job is scheduled automatically.
 
 ## Frontend UI
 
-The Next.js frontend is intentionally lean and professional, built on one
-cohesive design system rather than an ad hoc look.
+The Next.js frontend is a real agent dashboard plus the embeddable widget, built
+on one cohesive design system (`src/app/globals.css`): a small neutral palette
+with a single indigo accent, consistent spacing/radius/typography, subtle motion,
+and a `prefers-color-scheme` dark variant. No gradient hero blobs, glassmorphism,
+or emojis.
 
-- **Design tokens** (`src/app/globals.css`): a small neutral palette plus a single
-  blue accent, consistent spacing, radius, and typography, with a light theme and
-  a `prefers-color-scheme` dark variant. No gradient hero blobs, glassmorphism, or
-  emojis.
-- **Landing / overview** (`/`): a top navigation, a concise hero, a live API
-  status chip (server-rendered from `/api/health`), a capabilities grid, and a
-  sample of the API surface. It communicates what the product does without filler.
-- **Support widget** (`/widget?key=<publicKey>`): a self-contained, accessible
-  form styled independently of the app theme (it is embedded in an iframe on
-  third-party sites). It fetches the org's display config, themes itself with the
-  org's primary color, and handles loading, error, and success states.
+- **Auth** (`/login`): sign in or create an account. A first-time user is guided
+  through creating their organization before entering the app. Access/refresh
+  tokens are stored client-side and refreshed automatically on expiry.
+- **App shell** (`/app`): a sidebar (Overview, Tickets, Customers), a top bar with
+  a live notifications bell (unread count, updated over the socket), and the
+  signed-in user with sign-out.
+- **Overview** (`/app`): stat cards (open, total, SLA breaches, average
+  resolution) from the analytics endpoint, plus recent tickets.
+- **Tickets** (`/app/tickets`): status filters, search, and pagination; a "New
+  ticket" dialog that finds-or-creates the customer by email. Clicking a ticket
+  opens its detail.
+- **Ticket detail** (`/app/tickets/:id`): the conversation thread with a reply
+  composer, an internal-notes tab, and a details panel to change status,
+  priority, and assignee. New messages, notes, and ticket changes arrive live
+  over Socket.IO (the client subscribes to the ticket room).
+- **Customers** (`/app/customers`): searchable, paginated list with an add-customer
+  dialog.
+- **Support widget** (`/widget?key=<publicKey>`): the customer-facing form,
+  styled independently of the app theme (it is embedded in an iframe on
+  third-party sites), with real loading, error, and success states.
 
-Run the frontend with `npm run dev` in `frontend/` and open http://localhost:3000.
+Run the frontend with `npm run dev` in `frontend/` and open http://localhost:3000
+(the root redirects to `/app`, which sends you to `/login` when signed out).

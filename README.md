@@ -33,8 +33,9 @@ internal notes, route work with automation, track SLAs, and view analytics.
   logs with request correlation ids and secret redaction.
 - **Rate limiting** on auth and public surfaces; **Docker Compose** for the whole
   stack; **CI** on every push.
-- **Frontend**: a clean Next.js UI on one cohesive design system (light/dark),
-  with a product overview and the embeddable support widget.
+- **Frontend**: a clean Next.js agent dashboard (sign-in, overview, tickets with
+  live conversation and internal notes, customers) on one cohesive design system
+  (light/dark), plus the embeddable support widget.
 
 ## Tech stack
 
