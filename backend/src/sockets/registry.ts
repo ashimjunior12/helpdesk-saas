@@ -21,6 +21,8 @@ export type SocketEvent = (typeof SOCKET_EVENTS)[keyof typeof SOCKET_EVENTS];
 
 export interface SocketData {
   user: AuthenticatedUser;
+  // Effective org for this socket (own org, or the org a super admin selected).
+  orgId?: string | null;
 }
 
 export const orgRoom = (organizationId: string): string => `org:${organizationId}`;

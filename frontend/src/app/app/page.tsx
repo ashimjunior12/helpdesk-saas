@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
+import { useSocket } from '@/lib/socket';
 import { formatDuration, relativeTime } from '@/lib/format';
 import { StatusBadge, PriorityBadge } from '@/components/Badge';
 import type { AnalyticsOverview, Pagination, Ticket, TicketStatus } from '@/lib/types';
@@ -17,21 +18,43 @@ const STATUS_ORDER: TicketStatus[] = ['OPEN', 'PENDING', 'RESOLVED', 'CLOSED'];
 
 export default function OverviewPage() {
   const router = useRouter();
+  const socket = useSocket();
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [recent, setRecent] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([
+  const load = useCallback(async () => {
+    const [o, t] = await Promise.all([
       apiFetch<AnalyticsOverview>('/api/analytics/overview'),
       apiFetch<{ tickets: Ticket[]; pagination: Pagination }>('/api/tickets?limit=5'),
-    ])
-      .then(([o, t]) => {
-        setOverview(o);
-        setRecent(t.tickets);
-      })
-      .finally(() => setLoading(false));
+    ]);
+    setOverview(o);
+    setRecent(t.tickets);
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  // Keep the snapshot live as tickets change across the org.
+  useEffect(() => {
+    if (!socket) return;
+    const reload = () => {
+      void load();
+    };
+    const events = [
+      'ticket:created',
+      'ticket:updated',
+      'ticket:status_changed',
+      'ticket:assigned',
+      'ticket:deleted',
+    ];
+    events.forEach((e) => socket.on(e, reload));
+    return () => {
+      events.forEach((e) => socket.off(e, reload));
+    };
+  }, [socket, load]);
 
   if (loading || !overview) {
     return (

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch, ApiError } from '@/lib/api';
+import { useSocket } from '@/lib/socket';
 import { relativeTime } from '@/lib/format';
 import { PriorityBadge, StatusBadge } from '@/components/Badge';
 import { PlusIcon } from '@/components/icons';
@@ -13,6 +14,7 @@ const LIMIT = 15;
 
 export default function TicketsPage() {
   const router = useRouter();
+  const socket = useSocket();
   const [status, setStatus] = useState<TicketStatus | 'ALL'>('ALL');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -41,6 +43,26 @@ export default function TicketsPage() {
     const id = setTimeout(load, 250);
     return () => clearTimeout(id);
   }, [load]);
+
+  // Live-refresh the list when tickets change anywhere in the org (new ticket
+  // from the widget/API, status/assignment changes, deletions).
+  useEffect(() => {
+    if (!socket) return;
+    const reload = () => {
+      void load();
+    };
+    const events = [
+      'ticket:created',
+      'ticket:updated',
+      'ticket:status_changed',
+      'ticket:assigned',
+      'ticket:deleted',
+    ];
+    events.forEach((e) => socket.on(e, reload));
+    return () => {
+      events.forEach((e) => socket.off(e, reload));
+    };
+  }, [socket, load]);
 
   return (
     <>

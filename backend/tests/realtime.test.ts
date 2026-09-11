@@ -8,6 +8,7 @@ import { initRealtime } from '../src/sockets/index.js';
 import { setIO } from '../src/sockets/registry.js';
 import { connectTestDatabase, clearTestDatabase, disconnectTestDatabase } from './helpers/db.js';
 import { bootstrapOrg } from './helpers/auth.js';
+import { ensureSuperAdmin } from '../src/modules/platform/seedSuperAdmin.js';
 
 function waitFor<T = unknown>(socket: ClientSocket, event: string, timeoutMs = 3000): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -106,6 +107,28 @@ describe('Realtime (Socket.IO)', () => {
 
     const ack = await socket.emitWithAck('ticket:subscribe', { ticketId });
     expect(ack).toEqual({ ok: false, error: 'NOT_FOUND' });
+  });
+
+  it('delivers ticket:created to a super admin viewing the org', async () => {
+    const { adminToken, organizationId } = await bootstrapOrg(app);
+    await ensureSuperAdmin();
+    const login = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'bhattaraiashim789@gmail.com', password: 'Random123' });
+    const superToken = login.body.data.accessToken as string;
+
+    // Super admin connects while "viewing" this org (org id in the handshake).
+    const socket = ioClient(`http://localhost:${port}`, {
+      transports: ['websocket'],
+      auth: { token: superToken, organizationId },
+      reconnection: false,
+    });
+    clients.push(socket);
+    await waitFor(socket, 'connect');
+
+    const received = waitFor<{ subject: string }>(socket, 'ticket:created');
+    await seedTicket(adminToken);
+    expect((await received).subject).toBe('Help');
   });
 
   it('delivers ticket:created to the org room', async () => {

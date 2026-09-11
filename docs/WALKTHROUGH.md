@@ -545,6 +545,12 @@ Server -> client events:
 Client -> server events (with ack): `ticket:subscribe { ticketId }`,
 `ticket:unsubscribe { ticketId }` -> `{ ok: true } | { ok: false, error }`.
 
+On the frontend, the tickets list and the overview subscribe to the org-wide
+ticket events, so a ticket created from the widget or the public API appears
+without a manual refresh. A super admin who has entered an org (Open dashboard)
+passes that org id in the socket handshake, so their socket joins the org room
+and receives these events too.
+
 ### Client example (socket.io-client)
 
 ```js

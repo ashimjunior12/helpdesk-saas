@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { io, type Socket } from 'socket.io-client';
-import { API_BASE_URL, getAccessToken } from './api';
+import { API_BASE_URL, getAccessToken, getActiveOrg } from './api';
 
 const SocketContext = createContext<Socket | null>(null);
 
@@ -16,9 +16,11 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     const token = getAccessToken();
     if (!token) return;
 
+    const activeOrg = getActiveOrg();
     const s = io(API_BASE_URL, {
       transports: ['websocket'],
-      auth: { token },
+      // organizationId lets a super admin's socket join the org they are viewing.
+      auth: { token, organizationId: activeOrg?.id },
     });
     ref.current = s;
     setSocket(s);
