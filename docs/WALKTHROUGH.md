@@ -1087,6 +1087,11 @@ own organization; the super admin does not belong to any organization.
 - The super admin creates organizations and provisions members (ADMIN / MANAGER /
   AGENT) into any organization, reusing the same user-creation logic as an org
   admin. It cannot create another `SUPER_ADMIN` through the API.
+- The super admin has **full access to every organization's data**. Because they
+  belong to no org, they select one per request via the `X-Organization-Id`
+  header; org-scoped endpoints then operate on that org, and the super admin
+  bypasses org-role checks. Without the header, org-scoped calls return
+  `400 ORG_CONTEXT_REQUIRED`.
 
 Endpoints (super admin only):
 
@@ -1107,7 +1112,7 @@ curl -s -X POST http://localhost:4000/api/platform/organizations/<orgId>/users \
 **Frontend.** The super admin signs in at a dedicated, visually distinct page
 (`/super-admin`, a dark "Platform Console") - separate from the team/org sign-in
 (`/login`). Each page links to the other, and each rejects the wrong account
-type. After signing in the super admin lands in the platform area (`/app/platform`): an organizations grid with a create dialog, and
+type. After signing in the super admin lands in the platform area (`/app/platform`). From an organization's page they can **Open dashboard** to enter that org and use the full agent dashboard (tickets, customers, conversations, notes) as the super admin, with a banner showing which org is active and an Exit control; the frontend sends `X-Organization-Id` automatically while inside an org: an organizations grid with a create dialog, and
 per-organization member management (add admins/managers/agents) - separate from
 the org agent dashboard. Normal org users continue to self-serve or are
 provisioned by the super admin, then use the org dashboard.
