@@ -38,7 +38,7 @@ services:
       PORT: 4000
       MONGODB_URI: mongodb://mongo:27017/helpdesk
       REDIS_URL: redis://redis:6379
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3001}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET}
     volumes:
@@ -60,8 +60,9 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+    # Published on 3001 because the host's port 3000 is occupied.
     ports:
-      - '3000:3000'
+      - '3001:3000'
 
 volumes:
   mongo-data:
