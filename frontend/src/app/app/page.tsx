@@ -5,7 +5,15 @@ import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { formatDuration, relativeTime } from '@/lib/format';
 import { StatusBadge, PriorityBadge } from '@/components/Badge';
-import type { AnalyticsOverview, Pagination, Ticket } from '@/lib/types';
+import type { AnalyticsOverview, Pagination, Ticket, TicketStatus } from '@/lib/types';
+
+const STATUS_COLORS: Record<TicketStatus, string> = {
+  OPEN: '#4f46e5',
+  PENDING: '#d97706',
+  RESOLVED: '#059669',
+  CLOSED: '#94a3b8',
+};
+const STATUS_ORDER: TicketStatus[] = ['OPEN', 'PENDING', 'RESOLVED', 'CLOSED'];
 
 export default function OverviewPage() {
   const router = useRouter();
@@ -34,13 +42,14 @@ export default function OverviewPage() {
   }
 
   const breaches = overview.sla.firstResponseBreached + overview.sla.resolutionBreached;
-
   const stats = [
     { k: 'Open tickets', v: overview.totals.open },
     { k: 'Total tickets', v: overview.totals.tickets },
     { k: 'SLA breaches', v: breaches },
     { k: 'Avg resolution', v: formatDuration(overview.avgResolutionMs) },
   ];
+
+  const statusTotal = STATUS_ORDER.reduce((s, k) => s + (overview.byStatus[k] || 0), 0);
 
   return (
     <>
@@ -54,10 +63,46 @@ export default function OverviewPage() {
       <div className="stat-grid">
         {stats.map((s) => (
           <div key={s.k} className="stat">
-            <div className="k">{s.k}</div>
+            <div className="k">
+              <span className="kdot" />
+              {s.k}
+            </div>
             <div className="v">{s.v}</div>
           </div>
         ))}
+      </div>
+
+      <div className="panel panel-pad" style={{ marginBottom: 20 }}>
+        <h3 style={{ fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)', marginBottom: 12 }}>
+          Tickets by status
+        </h3>
+        {statusTotal === 0 ? (
+          <p className="muted" style={{ margin: 0 }}>No tickets yet.</p>
+        ) : (
+          <>
+            <div className="meter">
+              {STATUS_ORDER.map((k) => {
+                const val = overview.byStatus[k] || 0;
+                if (!val) return null;
+                return (
+                  <span
+                    key={k}
+                    style={{ width: `${(val / statusTotal) * 100}%`, background: STATUS_COLORS[k] }}
+                    title={`${k}: ${val}`}
+                  />
+                );
+              })}
+            </div>
+            <div className="legend">
+              {STATUS_ORDER.map((k) => (
+                <span key={k} className="li">
+                  <span className="sw" style={{ background: STATUS_COLORS[k] }} />
+                  {k.charAt(0) + k.slice(1).toLowerCase()} - {overview.byStatus[k] || 0}
+                </span>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="page-head">
