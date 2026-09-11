@@ -90,6 +90,43 @@ describe('Platform (super admin)', () => {
     expect(res.status).toBe(403);
   });
 
+  it('gives the super admin full access to an organization data via X-Organization-Id', async () => {
+    const token = await superAdminToken();
+    const org = await request(app)
+      .post('/api/platform/organizations')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Acme Inc' });
+    const orgId = org.body.data.organization.id as string;
+
+    // Without selecting an org, org-scoped access is refused.
+    const noCtx = await request(app).get('/api/tickets').set('Authorization', `Bearer ${token}`);
+    expect(noCtx.status).toBe(400);
+    expect(noCtx.body.error.code).toBe('ORG_CONTEXT_REQUIRED');
+
+    // With the header, the super admin acts inside that org (create + read),
+    // bypassing org-role checks.
+    const customer = await request(app)
+      .post('/api/customers')
+      .set('Authorization', `Bearer ${token}`)
+      .set('X-Organization-Id', orgId)
+      .send({ name: 'Cust', email: 'cust@buyer.com' });
+    expect(customer.status).toBe(201);
+
+    const ticket = await request(app)
+      .post('/api/tickets')
+      .set('Authorization', `Bearer ${token}`)
+      .set('X-Organization-Id', orgId)
+      .send({ subject: 'Super admin ticket', customerId: customer.body.data.customer.id });
+    expect(ticket.status).toBe(201);
+
+    const list = await request(app)
+      .get('/api/tickets')
+      .set('Authorization', `Bearer ${token}`)
+      .set('X-Organization-Id', orgId);
+    expect(list.status).toBe(200);
+    expect(list.body.data.tickets).toHaveLength(1);
+  });
+
   it('rejects creating a user in a non-existent organization', async () => {
     const token = await superAdminToken();
     const res = await request(app)

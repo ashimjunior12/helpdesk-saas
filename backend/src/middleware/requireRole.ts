@@ -9,6 +9,11 @@ export function requireRole(...roles: UserRole[]) {
     if (!req.user) {
       throw AppError.unauthorized('Authentication required');
     }
+    // The platform super admin bypasses org-role checks (full access).
+    if (req.user.role === 'SUPER_ADMIN') {
+      next();
+      return;
+    }
     if (!req.user.role || !roles.includes(req.user.role)) {
       throw AppError.forbidden();
     }
