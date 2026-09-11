@@ -24,6 +24,7 @@ import { automationRouter } from './modules/automation/automation.routes.js';
 import { apiKeysRouter } from './modules/apikeys/apikeys.routes.js';
 import { publicApiRouter } from './modules/public/public.routes.js';
 import { widgetConfigRouter, publicWidgetRouter } from './modules/widget/widget.routes.js';
+import { platformRouter } from './modules/platform/platform.routes.js';
 
 /**
  * Builds and configures the Express application.
@@ -81,6 +82,7 @@ export function createApp(): Application {
   app.use('/api/api-keys', apiKeysRouter);
   app.use('/api/public/v1', publicApiRouter);
   app.use('/api/widget-config', widgetConfigRouter);
+  app.use('/api/platform', platformRouter);
 
   // Unmatched routes and centralized error handling come last.
   app.use(notFound);
