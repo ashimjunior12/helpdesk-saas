@@ -114,6 +114,7 @@ Frontend (`/frontend`): `npm run dev`, `build`, `start`, `lint`, `typecheck`.
 
 ## Documentation
 
+- `docs/USER_GUIDE.md` - how to run and use the app by role (super admin, team, customer), step by step.
 - `docs/WALKTHROUGH.md` - every feature explained with the business logic behind
   it and runnable `curl` examples (the fastest way to understand the API).
 - `docs/SECURITY.md` - the security posture by area, plus known gaps.
