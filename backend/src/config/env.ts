@@ -38,7 +38,7 @@ const envSchema = z.object({
 
   // Platform super admin, seeded at startup if no SUPER_ADMIN exists. Change the
   // password after first login.
-  SUPER_ADMIN_EMAIL: z.string().trim().toLowerCase().email().default('ashimjunior12@gmail.com'),
+  SUPER_ADMIN_EMAIL: z.string().trim().toLowerCase().email().default('bhattaraiashim789@gmail.com'),
   SUPER_ADMIN_PASSWORD: z.string().min(6).default('Random123'),
 });
 

@@ -5,7 +5,7 @@ import { ensureSuperAdmin } from '../src/modules/platform/seedSuperAdmin.js';
 import { connectTestDatabase, clearTestDatabase, disconnectTestDatabase } from './helpers/db.js';
 import { bootstrapOrg } from './helpers/auth.js';
 
-const SUPER_EMAIL = 'ashimjunior12@gmail.com';
+const SUPER_EMAIL = 'bhattaraiashim789@gmail.com';
 const SUPER_PASSWORD = 'Random123';
 
 describe('Platform (super admin)', () => {
