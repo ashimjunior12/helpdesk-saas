@@ -2,7 +2,7 @@ import { AppError } from '../../utils/AppError.js';
 import { logger } from '../../utils/logger.js';
 import { OrganizationModel, type OrganizationDocument } from '../organizations/organization.model.js';
 import { UserModel, type UserDocument } from '../auth/user.model.js';
-import { createUser } from '../users/users.service.js';
+import { createUser, deleteUser } from '../users/users.service.js';
 import type { CreateUserInput } from '../users/users.validation.js';
 
 export interface OrganizationWithCount {
@@ -45,4 +45,15 @@ export async function createOrganizationUser(
 ): Promise<UserDocument> {
   await assertOrganization(organizationId);
   return createUser(organizationId, input);
+}
+
+// Deletes any member (admin/manager/agent) of an organization on behalf of the
+// super admin.
+export async function deleteOrganizationUser(
+  organizationId: string,
+  actorUserId: string,
+  targetUserId: string,
+): Promise<void> {
+  await assertOrganization(organizationId);
+  await deleteUser(organizationId, actorUserId, targetUserId);
 }

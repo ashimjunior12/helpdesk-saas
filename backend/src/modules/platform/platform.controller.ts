@@ -3,6 +3,7 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import {
   createOrganization,
   createOrganizationUser,
+  deleteOrganizationUser,
   listOrganizations,
   listOrganizationUsers,
 } from './platform.service.js';
@@ -29,4 +30,9 @@ export const listOrgUsers = asyncHandler(async (req: Request, res: Response) => 
 export const createOrgUser = asyncHandler(async (req: Request, res: Response) => {
   const user = await createOrganizationUser(req.params.orgId, req.body as CreateUserInput);
   res.status(201).json({ success: true, data: { user } });
+});
+
+export const deleteOrgUser = asyncHandler(async (req: Request, res: Response) => {
+  await deleteOrganizationUser(req.params.orgId, req.user!.id, req.params.userId);
+  res.status(204).send();
 });

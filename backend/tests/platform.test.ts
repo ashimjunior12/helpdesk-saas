@@ -82,6 +82,31 @@ describe('Platform (super admin)', () => {
     expect(me.body.data.user.role).toBe('ADMIN');
   });
 
+  it('lets the super admin delete any member of an organization', async () => {
+    const token = await superAdminToken();
+    const org = await request(app)
+      .post('/api/platform/organizations')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Acme Inc' });
+    const orgId = org.body.data.organization.id as string;
+
+    const created = await request(app)
+      .post(`/api/platform/organizations/${orgId}/users`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ email: 'admin@acme.com', name: 'Acme Admin', password: 'sup3rsecret', role: 'ADMIN' });
+    const userId = created.body.data.user.id as string;
+
+    const del = await request(app)
+      .delete(`/api/platform/organizations/${orgId}/users/${userId}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(del.status).toBe(204);
+
+    const users = await request(app)
+      .get(`/api/platform/organizations/${orgId}/users`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(users.body.data.users).toHaveLength(0);
+  });
+
   it('forbids a normal org admin from using the platform API', async () => {
     const { adminToken } = await bootstrapOrg(app, 'owner@example.com', 'Owner Co');
     const res = await request(app)
