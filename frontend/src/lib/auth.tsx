@@ -13,8 +13,8 @@ interface AuthTokens {
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthUser>;
+  register: (email: string, password: string, name: string) => Promise<AuthUser>;
   createOrganization: (name: string) => Promise<void>;
   logout: () => void;
   refresh: () => Promise<void>;
@@ -47,25 +47,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void loadMe();
   }, [loadMe]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const data = await apiFetch<AuthTokens>('/api/auth/login', {
-      method: 'POST',
-      body: { email, password },
-      auth: false,
-    });
-    setTokens(data.accessToken, data.refreshToken);
-    setUser(data.user);
+  // The login/register response carries only the public user (no role/org), so
+  // after storing tokens we fetch /me for the full identity used to route.
+  const hydrate = useCallback(async (): Promise<AuthUser> => {
+    const me = await apiFetch<{ user: AuthUser }>('/api/auth/me');
+    setUser(me.user);
+    return me.user;
   }, []);
 
-  const register = useCallback(async (email: string, password: string, name: string) => {
-    const data = await apiFetch<AuthTokens>('/api/auth/register', {
-      method: 'POST',
-      body: { email, password, name },
-      auth: false,
-    });
-    setTokens(data.accessToken, data.refreshToken);
-    setUser(data.user);
-  }, []);
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const data = await apiFetch<AuthTokens>('/api/auth/login', {
+        method: 'POST',
+        body: { email, password },
+        auth: false,
+      });
+      setTokens(data.accessToken, data.refreshToken);
+      return hydrate();
+    },
+    [hydrate],
+  );
+
+  const register = useCallback(
+    async (email: string, password: string, name: string) => {
+      const data = await apiFetch<AuthTokens>('/api/auth/register', {
+        method: 'POST',
+        body: { email, password, name },
+        auth: false,
+      });
+      setTokens(data.accessToken, data.refreshToken);
+      return hydrate();
+    },
+    [hydrate],
+  );
 
   const createOrganization = useCallback(async (name: string) => {
     const data = await apiFetch<{ accessToken: string; refreshToken: string }>('/api/organizations', {
