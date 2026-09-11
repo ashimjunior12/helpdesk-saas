@@ -22,6 +22,7 @@ export default function WidgetForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ticketNumber, setTicketNumber] = useState<number | null>(null);
+  const [submittedEmail, setSubmittedEmail] = useState('');
 
   useEffect(() => {
     if (!key) {
@@ -51,12 +52,19 @@ export default function WidgetForm() {
       if (!res.ok) {
         throw new Error(json?.error?.message ?? 'Something went wrong. Please try again.');
       }
+      setSubmittedEmail(form.email);
       setTicketNumber(json.data.ticketNumber as number);
+      setForm({ name: '', email: '', subject: '', message: '' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function sendAnother() {
+    setTicketNumber(null);
+    setError(null);
   }
 
   const accentStyle = { '--accent': config?.primaryColor } as CSSProperties;
@@ -91,11 +99,19 @@ export default function WidgetForm() {
 
         {ticketNumber !== null ? (
           <div className={styles.success}>
-            <p className={styles.successTitle}>Thanks, we got your message.</p>
+            <div className={styles.successIcon} aria-hidden="true">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            </div>
+            <p className={styles.successTitle}>Your request has been submitted</p>
             <p className={styles.successBody}>
-              Your request has been logged as ticket{' '}
-              <span className={styles.ticketRef}>#{ticketNumber}</span>. We will reply by email.
+              We created ticket <span className={styles.ticketRef}>#{ticketNumber}</span> and will
+              reply to <strong>{submittedEmail}</strong> by email.
             </p>
+            <button type="button" className={styles.buttonGhost} onClick={sendAnother}>
+              Send another message
+            </button>
           </div>
         ) : (
           <form className={styles.body} onSubmit={handleSubmit} noValidate>
