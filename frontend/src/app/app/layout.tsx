@@ -7,22 +7,34 @@ import { useAuth } from '@/lib/auth';
 import { SocketProvider } from '@/lib/socket';
 import { ApiError } from '@/lib/api';
 import { NotificationsBell } from '@/components/NotificationsBell';
+import { Avatar } from '@/components/Avatar';
 import { GridIcon, LogoutIcon, TicketIcon, UsersIcon } from '@/components/icons';
 
-const NAV = [
+const ORG_NAV = [
   { href: '/app', label: 'Overview', icon: GridIcon, exact: true },
   { href: '/app/tickets', label: 'Tickets', icon: TicketIcon, exact: false },
   { href: '/app/customers', label: 'Customers', icon: UsersIcon, exact: false },
 ];
+
+const PLATFORM_NAV = [{ href: '/app/platform', label: 'Organizations', icon: GridIcon, exact: false }];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+
   useEffect(() => {
     if (!loading && !user) router.replace('/login');
   }, [loading, user, router]);
+
+  // Keep the super admin inside the platform area (they have no organization).
+  useEffect(() => {
+    if (!loading && isSuperAdmin && !pathname.startsWith('/app/platform')) {
+      router.replace('/app/platform');
+    }
+  }, [loading, isSuperAdmin, pathname, router]);
 
   if (loading || !user) {
     return (
@@ -32,58 +44,64 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user.organizationId) {
+  if (!isSuperAdmin && !user.organizationId) {
     return <CreateOrganization />;
   }
 
-  const title = NAV.find((n) => (n.exact ? pathname === n.href : pathname.startsWith(n.href)))?.label ?? 'Overview';
+  const nav = isSuperAdmin ? PLATFORM_NAV : ORG_NAV;
+  const title = nav.find((n) => (n.exact ? pathname === n.href : pathname.startsWith(n.href)))?.label ??
+    (isSuperAdmin ? 'Organizations' : 'Overview');
 
-  return (
-    <SocketProvider>
-      <div className="shell">
-        <aside className="sidebar">
-          <div className="side-brand">
-            <span className="brand-mark">H</span>
-            Helpdesk
-          </div>
-          {NAV.map((n) => {
-            const active = n.exact ? pathname === n.href : pathname.startsWith(n.href);
-            const Icon = n.icon;
-            return (
-              <Link key={n.href} href={n.href} className={`nav-item ${active ? 'active' : ''}`}>
-                <Icon className="nav-icon" />
-                {n.label}
-              </Link>
-            );
-          })}
-          <div className="side-foot">
-            <span className="who">{user.email}</span>
-            <span>{user.role}</span>
-            <button
-              className="btn btn-ghost btn-sm"
-              style={{ marginTop: 8, width: '100%' }}
-              onClick={() => {
-                logout();
-                router.replace('/login');
-              }}
-            >
-              <LogoutIcon /> Sign out
-            </button>
-          </div>
-        </aside>
-
-        <div className="main">
-          <header className="topbar">
-            <h1>{title}</h1>
-            <div className="topbar-right">
-              <NotificationsBell />
-            </div>
-          </header>
-          <div className="content">{children}</div>
+  const shell = (
+    <div className="shell">
+      <aside className="sidebar">
+        <div className="side-brand">
+          <span className="brand-mark">H</span>
+          Helpdesk
         </div>
+        {nav.map((n) => {
+          const active = n.exact ? pathname === n.href : pathname.startsWith(n.href);
+          const Icon = n.icon;
+          return (
+            <Link key={n.href} href={n.href} className={`nav-item ${active ? 'active' : ''}`}>
+              <Icon className="nav-icon" />
+              {n.label}
+            </Link>
+          );
+        })}
+        <div className="side-foot">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+            <Avatar name={user.email} size={30} />
+            <div style={{ minWidth: 0 }}>
+              <span className="who">{user.email}</span>
+              <span>{isSuperAdmin ? 'Super admin' : user.role}</span>
+            </div>
+          </div>
+          <button
+            className="btn btn-ghost btn-sm"
+            style={{ width: '100%' }}
+            onClick={() => {
+              logout();
+              router.replace('/login');
+            }}
+          >
+            <LogoutIcon /> Sign out
+          </button>
+        </div>
+      </aside>
+
+      <div className="main">
+        <header className="topbar">
+          <h1>{title}</h1>
+          <div className="topbar-right">{!isSuperAdmin && <NotificationsBell />}</div>
+        </header>
+        <div className="content">{children}</div>
       </div>
-    </SocketProvider>
+    </div>
   );
+
+  // Sockets are an org-user feature; the super admin does not need one.
+  return isSuperAdmin ? shell : <SocketProvider>{shell}</SocketProvider>;
 }
 
 function CreateOrganization() {

@@ -1,4 +1,5 @@
-export type Role = 'ADMIN' | 'MANAGER' | 'AGENT';
+export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'AGENT';
+export type OrgRole = 'ADMIN' | 'MANAGER' | 'AGENT';
 export type TicketStatus = 'OPEN' | 'PENDING' | 'RESOLVED' | 'CLOSED';
 export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
@@ -39,6 +40,14 @@ export interface Note {
   authorId: string;
   body: string;
   createdAt: string;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  memberCount?: number;
 }
 
 export interface Customer {
