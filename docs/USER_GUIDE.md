@@ -154,26 +154,28 @@ marks them read.
 
 Let customers raise tickets from your own website, with no login.
 
-1. As an org admin, get your widget's public key and settings from the API
-   (`GET /api/widget-config`) and adjust them (`PUT /api/widget-config`: title,
-   welcome message, primary color). You can rotate the key
-   (`POST /api/widget-config/rotate-key`).
-2. The widget page lives at `/widget?key=<publicKey>`. Embed it on your site in an
-   iframe, for example:
+**Configure it (admin):** open **Widget** in the dashboard sidebar. Set the title,
+welcome message, and primary color, toggle it on, and copy the **embed snippet**.
+You can rotate the public key (which invalidates the old snippet) and open a live
+preview of the form.
 
-   ```html
-   <iframe src="http://localhost:3001/widget?key=wgt_your_public_key"
-           style="width:420px;height:600px;border:0"></iframe>
-   ```
+**Embed it:** paste the snippet just before `</body>` on your site:
 
-3. A customer fills in name, email, subject, and message. Submitting creates a
-   ticket in your organization (it finds-or-creates the customer by email) and
-   shows them the ticket number.
+```html
+<script src="http://localhost:3001/widget.js"
+        data-key="wgt_your_public_key"
+        data-color="#4f46e5"
+        data-greeting="Namaste, how may I help you?"></script>
+```
 
-The public key is safe to embed: it can only submit a ticket and read the
+This adds a floating support button in the corner of the page. A customer clicks
+it, the support form slides open, and submitting creates a ticket in your
+organization (finding or creating the customer by email) and shows them the ticket
+number. The public key is safe to embed: it can only submit a ticket and read the
 widget's display settings, never read your data.
 
----
+Prefer an always-open form instead of the floating button? Embed the page directly
+in an iframe: `<iframe src="http://localhost:3001/widget?key=wgt_..."></iframe>`.
 
 ## 7. The public API (integrations)
 

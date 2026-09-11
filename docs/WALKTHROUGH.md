@@ -958,7 +958,10 @@ curl -s -X POST http://localhost:4000/api/public/widget/$KEY/tickets \
 **Frontend.** A clean, accessible widget page at `/widget?key=<publicKey>`
 (Next.js) fetches the display config, themes itself with the org's primary color,
 and posts the form to the public endpoint - with real loading / error / success
-states. It is designed to be dropped into an iframe on the customer's site.
+states. It is designed to be dropped into an iframe on the customer's site. A drop-in launcher script (`/widget.js`, embedded with a
+`data-key`) adds a floating support button that opens this form in a panel, so the
+customer sees a bubble rather than an always-open iframe. Org admins configure the
+widget and copy the embed snippet from the dashboard **Widget** page.
 
 ---
 
