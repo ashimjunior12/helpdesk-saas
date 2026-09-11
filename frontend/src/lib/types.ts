@@ -50,6 +50,15 @@ export interface Organization {
   memberCount?: number;
 }
 
+export interface WidgetConfig {
+  id: string;
+  publicKey: string;
+  title: string;
+  welcomeMessage: string;
+  primaryColor: string;
+  enabled: boolean;
+}
+
 export interface Customer {
   id: string;
   name: string;

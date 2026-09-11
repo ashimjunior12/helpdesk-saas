@@ -9,7 +9,7 @@ import { ImpersonationProvider, useImpersonation } from '@/lib/impersonation';
 import { ApiError } from '@/lib/api';
 import { NotificationsBell } from '@/components/NotificationsBell';
 import { Avatar } from '@/components/Avatar';
-import { GridIcon, LogoutIcon, TicketIcon, UsersIcon } from '@/components/icons';
+import { ChatIcon, GridIcon, LogoutIcon, TicketIcon, UsersIcon } from '@/components/icons';
 
 const ORG_NAV = [
   { href: '/app', label: 'Overview', icon: GridIcon, exact: true },
@@ -70,7 +70,11 @@ function AppInner({ children }: { children: ReactNode }) {
   }
 
   const platformMode = isSuperAdmin && onPlatform;
-  const nav = platformMode ? PLATFORM_NAV : ORG_NAV;
+  const canManageWidget = isSuperAdmin || user.role === 'ADMIN';
+  const orgNav = canManageWidget
+    ? [...ORG_NAV, { href: '/app/widget', label: 'Widget', icon: ChatIcon, exact: false }]
+    : ORG_NAV;
+  const nav = platformMode ? PLATFORM_NAV : orgNav;
   const title =
     nav.find((n) => (n.exact ? pathname === n.href : pathname.startsWith(n.href)))?.label ??
     (platformMode ? 'Organizations' : 'Overview');
