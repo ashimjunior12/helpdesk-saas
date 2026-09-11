@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { ApiError } from '@/lib/api';
@@ -8,7 +9,7 @@ import { ApiError } from '@/lib/api';
 type Mode = 'login' | 'register';
 
 export default function LoginPage() {
-  const { user, loading, login, register } = useAuth();
+  const { user, loading, login, register, logout } = useAuth();
   const router = useRouter();
 
   const [mode, setMode] = useState<Mode>('login');
@@ -27,10 +28,13 @@ export default function LoginPage() {
     setError(null);
     setBusy(true);
     try {
-      if (mode === 'login') {
-        await login(email, password);
-      } else {
-        await register(email, password, name);
+      const u = mode === 'login' ? await login(email, password) : await register(email, password, name);
+      // The platform super admin uses a separate sign-in page.
+      if (u.role === 'SUPER_ADMIN') {
+        logout();
+        setError('This is a platform administrator account. Use the platform sign-in.');
+        setBusy(false);
+        return;
       }
       router.replace('/app');
     } catch (err) {
@@ -120,6 +124,10 @@ export default function LoginPage() {
               </button>
             </>
           )}
+        </div>
+
+        <div className="auth-alt">
+          <Link href="/super-admin">Platform administrator sign-in</Link>
         </div>
       </div>
     </div>

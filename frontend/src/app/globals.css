@@ -958,3 +958,66 @@ h4 {
 .urow .uname { font-weight: 600; }
 .urow .umail { font-size: 0.82rem; color: var(--text-muted); }
 .urow .uspacer { flex: 1; }
+
+/* ---------- Auth: shared alt link + platform (super admin) theme ---------- */
+.auth-alt {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.84rem;
+}
+.auth-alt a {
+  color: var(--accent);
+  font-weight: 600;
+}
+.auth-alt a:hover {
+  text-decoration: underline;
+}
+
+/* The platform console sign-in is deliberately dark and distinct from the
+   light team sign-in, so it is unmistakable which door you are using. */
+.auth-platform {
+  background:
+    radial-gradient(1200px 500px at 50% -10%, rgba(99, 102, 241, 0.25), transparent),
+    #0b1020;
+}
+.auth-platform .auth-card {
+  background: #121a2e;
+  border-color: #263149;
+  color: #e6e9f2;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.auth-platform .auth-brand {
+  color: #f4f6fb;
+}
+.auth-platform .auth-sub {
+  color: #94a3b8;
+}
+.auth-platform .label {
+  color: #cbd5e1;
+}
+.auth-platform .input {
+  background: #0e1626;
+  border-color: #2b3956;
+  color: #e6e9f2;
+}
+.auth-platform .input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}
+.auth-platform .btn-primary {
+  background: #6366f1;
+}
+.auth-platform .btn-primary:hover:not(:disabled) {
+  background: #818cf8;
+}
+.auth-platform .auth-alt {
+  border-top-color: #263149;
+}
+.auth-platform .auth-alt a {
+  color: #a5b4fc;
+}
+.brand-mark-platform {
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+}
