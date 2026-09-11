@@ -2,6 +2,8 @@ import { AppError } from '../../utils/AppError.js';
 import { logger } from '../../utils/logger.js';
 import { UserModel, type UserDocument } from '../auth/user.model.js';
 import { hashPassword } from '../auth/password.js';
+import { TicketModel } from '../tickets/ticket.model.js';
+import { TeamModel } from '../teams/team.model.js';
 import type { CreateUserInput, UpdateUserInput } from './users.validation.js';
 
 const MONGO_DUPLICATE_KEY = 11000;
@@ -78,6 +80,38 @@ export async function updateUser(
     'User updated',
   );
   return user;
+}
+
+// Deletes a member from an organization. Deleting yourself is rejected. Their
+// references are detached first: assigned tickets are unassigned and they are
+// removed from any teams (message/note authorship is left as historical record).
+export async function deleteUser(
+  organizationId: string,
+  actorUserId: string,
+  targetUserId: string,
+): Promise<void> {
+  if (actorUserId === targetUserId) {
+    throw new AppError(400, 'CANNOT_DELETE_SELF', 'You cannot delete your own account');
+  }
+
+  const user = await UserModel.findOne({ _id: targetUserId, organizationId });
+  if (!user) {
+    throw AppError.notFound('User not found');
+  }
+
+  await TicketModel.updateMany(
+    { organizationId, assignedAgentId: targetUserId },
+    { assignedAgentId: null },
+  );
+  await TeamModel.updateMany({ organizationId, memberIds: targetUserId }, {
+    $pull: { memberIds: targetUserId },
+  });
+  await user.deleteOne();
+
+  logger.info(
+    { operation: 'users.delete', organizationId, actorUserId, userId: targetUserId },
+    'User deleted',
+  );
 }
 
 function isDuplicateKeyError(err: unknown): boolean {

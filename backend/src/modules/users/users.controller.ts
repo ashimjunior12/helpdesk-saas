@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler.js';
-import { createUser, getUser, listUsers, updateUser } from './users.service.js';
+import { createUser, deleteUser, getUser, listUsers, updateUser } from './users.service.js';
 import type { CreateUserInput, UpdateUserInput } from './users.validation.js';
 
 export const create = asyncHandler(async (req: Request, res: Response) => {
@@ -26,4 +26,9 @@ export const update = asyncHandler(async (req: Request, res: Response) => {
     req.body as UpdateUserInput,
   );
   res.status(200).json({ success: true, data: { user } });
+});
+
+export const remove = asyncHandler(async (req: Request, res: Response) => {
+  await deleteUser(req.user!.organizationId!, req.user!.id, req.params.id);
+  res.status(204).send();
 });

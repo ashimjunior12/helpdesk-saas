@@ -130,6 +130,49 @@ describe('Users', () => {
       expect(res.body.error.code).toBe('CANNOT_MODIFY_SELF');
     });
 
+    it('deletes a member and detaches their ticket assignments', async () => {
+      const { adminToken } = await bootstrapOrg(app);
+      const agent = await createMemberAndLogin(app, adminToken, 'agent@example.com', 'AGENT');
+
+      const customer = await request(app)
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'C', email: 'c@buyer.com' });
+      const ticket = await request(app)
+        .post('/api/tickets')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ subject: 'T', customerId: customer.body.data.customer.id, assignedAgentId: agent.userId });
+
+      const del = await request(app)
+        .delete(`/api/users/${agent.userId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(del.status).toBe(204);
+
+      // The deleted member is gone and their ticket is unassigned.
+      const list = await request(app).get('/api/users').set('Authorization', `Bearer ${adminToken}`);
+      expect(list.body.data.users.map((u: { email: string }) => u.email)).not.toContain('agent@example.com');
+      const fetched = await request(app)
+        .get(`/api/tickets/${ticket.body.data.ticket.id}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(fetched.body.data.ticket.assignedAgentId).toBeNull();
+    });
+
+    it('rejects deleting yourself and forbids a non-admin', async () => {
+      const { adminToken, adminUserId } = await bootstrapOrg(app);
+      const agent = await createMemberAndLogin(app, adminToken, 'agent@example.com', 'AGENT');
+
+      const self = await request(app)
+        .delete(`/api/users/${adminUserId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(self.status).toBe(400);
+      expect(self.body.error.code).toBe('CANNOT_DELETE_SELF');
+
+      const forbidden = await request(app)
+        .delete(`/api/users/${adminUserId}`)
+        .set('Authorization', `Bearer ${agent.token}`);
+      expect(forbidden.status).toBe(403);
+    });
+
     it('deactivates a member so they can no longer log in', async () => {
       const { adminToken } = await bootstrapOrg(app);
       const agent = await createMemberAndLogin(app, adminToken, 'agent@example.com', 'AGENT');
