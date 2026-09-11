@@ -1079,7 +1079,7 @@ own organization; the super admin does not belong to any organization.
 
 **Business logic.**
 - A super admin is seeded at startup if none exists, from `SUPER_ADMIN_EMAIL` /
-  `SUPER_ADMIN_PASSWORD` (defaults `ashimjunior12@gmail.com` / `Random123` -
+  `SUPER_ADMIN_PASSWORD` (defaults `bhattaraiashim789@gmail.com` / `Random123` -
   change the password after first login). Seeding is idempotent and never
   overwrites an existing account.
 - `SUPER_ADMIN` is a role value with no `organizationId`. The `/api/platform/*`
@@ -1104,8 +1104,10 @@ curl -s -X POST http://localhost:4000/api/platform/organizations/<orgId>/users \
   -d '{"email":"admin@acme.com","name":"Acme Admin","password":"sup3rsecret","role":"ADMIN"}'
 ```
 
-**Frontend.** The super admin signs in at `/login` and is routed to a dedicated
-platform area (`/app/platform`): an organizations grid with a create dialog, and
+**Frontend.** The super admin signs in at a dedicated, visually distinct page
+(`/super-admin`, a dark "Platform Console") - separate from the team/org sign-in
+(`/login`). Each page links to the other, and each rejects the wrong account
+type. After signing in the super admin lands in the platform area (`/app/platform`): an organizations grid with a create dialog, and
 per-organization member management (add admins/managers/agents) - separate from
 the org agent dashboard. Normal org users continue to self-serve or are
 provisioned by the super admin, then use the org dashboard.
