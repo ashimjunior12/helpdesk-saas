@@ -1092,6 +1092,11 @@ own organization; the super admin does not belong to any organization.
   header; org-scoped endpoints then operate on that org, and the super admin
   bypasses org-role checks. Without the header, org-scoped calls return
   `400 ORG_CONTEXT_REQUIRED`.
+- The super admin can **delete any member** (admin, manager, or agent) of any
+  organization via `DELETE /api/platform/organizations/:orgId/users/:userId`. Org
+  admins can likewise delete members of their own org via `DELETE /api/users/:id`.
+  Deleting yourself is rejected; a deleted member's ticket assignments are cleared
+  and they are removed from any teams.
 
 Endpoints (super admin only):
 
