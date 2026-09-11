@@ -1068,3 +1068,44 @@ or emojis.
 
 Run the frontend with `npm run dev` in `frontend/` and open http://localhost:3000
 (the root redirects to `/app`, which sends you to `/login` when signed out).
+
+---
+
+## Platform super admin
+
+Above organizations sits a single platform **SUPER_ADMIN** who provisions
+organizations and their admins/managers. Each org's admin/manager then runs their
+own organization; the super admin does not belong to any organization.
+
+**Business logic.**
+- A super admin is seeded at startup if none exists, from `SUPER_ADMIN_EMAIL` /
+  `SUPER_ADMIN_PASSWORD` (defaults `ashimjunior12@gmail.com` / `Random123` -
+  change the password after first login). Seeding is idempotent and never
+  overwrites an existing account.
+- `SUPER_ADMIN` is a role value with no `organizationId`. The `/api/platform/*`
+  endpoints are guarded by `requireSuperAdmin`; a normal org admin gets `403`.
+- The super admin creates organizations and provisions members (ADMIN / MANAGER /
+  AGENT) into any organization, reusing the same user-creation logic as an org
+  admin. It cannot create another `SUPER_ADMIN` through the API.
+
+Endpoints (super admin only):
+
+```bash
+SA="<super admin access token>"   # from POST /api/auth/login
+# List organizations (with member counts)
+curl -s http://localhost:4000/api/platform/organizations -H "Authorization: Bearer $SA"
+# Create an organization
+curl -s -X POST http://localhost:4000/api/platform/organizations \
+  -H "Authorization: Bearer $SA" -H 'Content-Type: application/json' -d '{"name":"Acme Inc"}'
+# List / provision members in an organization
+curl -s http://localhost:4000/api/platform/organizations/<orgId>/users -H "Authorization: Bearer $SA"
+curl -s -X POST http://localhost:4000/api/platform/organizations/<orgId>/users \
+  -H "Authorization: Bearer $SA" -H 'Content-Type: application/json' \
+  -d '{"email":"admin@acme.com","name":"Acme Admin","password":"sup3rsecret","role":"ADMIN"}'
+```
+
+**Frontend.** The super admin signs in at `/login` and is routed to a dedicated
+platform area (`/app/platform`): an organizations grid with a create dialog, and
+per-organization member management (add admins/managers/agents) - separate from
+the org agent dashboard. Normal org users continue to self-serve or are
+provisioned by the super admin, then use the org dashboard.

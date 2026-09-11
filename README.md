@@ -10,6 +10,7 @@ internal notes, route work with automation, track SLAs, and view analytics.
 
 ## Highlights
 
+- **Platform super admin** above all organizations: seeded from the database, provisions organizations and their admins/managers via a dedicated `/api/platform` surface and admin UI.
 - **Multi-tenant** with strict per-organization isolation. Every org-owned query
   is scoped by `organizationId` derived from the authenticated token; cross-tenant
   access (including linked ids) returns `404`, never confirming existence.
@@ -99,7 +100,7 @@ npm run dev                  # http://localhost:3000  (widget at /widget?key=<pu
 ```bash
 cp .env.docker.example .env  # set JWT secrets
 docker compose up --build
-# frontend -> http://localhost:3000 , backend -> http://localhost:4000
+# frontend -> http://localhost:3001 , backend -> http://localhost:4000
 ```
 
 Running via Compose includes Redis, so notifications flow through BullMQ workers
