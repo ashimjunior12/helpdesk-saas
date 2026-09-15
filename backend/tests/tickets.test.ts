@@ -187,13 +187,21 @@ describe('Tickets', () => {
   });
 
   describe('DELETE /api/tickets/:id', () => {
-    it('forbids an AGENT and allows a MANAGER', async () => {
+    async function resolve(token: string, id: string) {
+      await request(app)
+        .post(`/api/tickets/${id}/status`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ status: 'RESOLVED' });
+    }
+
+    it('forbids an AGENT and allows a MANAGER on a resolved ticket', async () => {
       const { adminToken } = await bootstrapOrg(app);
       const agent = await createMemberAndLogin(app, adminToken, 'agent@example.com', 'AGENT');
       const manager = await createMemberAndLogin(app, adminToken, 'manager@example.com', 'MANAGER');
       const customerId = await createCustomer(adminToken);
       const created = await createTicket(adminToken, { subject: 'X', customerId });
       const id = created.body.data.ticket.id as string;
+      await resolve(adminToken, id);
 
       const forbidden = await request(app)
         .delete(`/api/tickets/${id}`)
@@ -204,6 +212,19 @@ describe('Tickets', () => {
         .delete(`/api/tickets/${id}`)
         .set('Authorization', `Bearer ${manager.token}`);
       expect(ok.status).toBe(204);
+    });
+
+    it('rejects deleting a ticket that is not resolved or closed', async () => {
+      const { adminToken } = await bootstrapOrg(app);
+      const customerId = await createCustomer(adminToken);
+      const created = await createTicket(adminToken, { subject: 'Still open', customerId });
+      const id = created.body.data.ticket.id as string;
+
+      const res = await request(app)
+        .delete(`/api/tickets/${id}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe('TICKET_NOT_DELETABLE');
     });
   });
 });

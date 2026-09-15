@@ -4,7 +4,13 @@ import { logger } from '../../utils/logger.js';
 import { CustomerModel } from '../customers/customer.model.js';
 import { UserModel } from '../auth/user.model.js';
 import { TeamModel } from '../teams/team.model.js';
-import { TicketModel, TICKET_TRANSITIONS, type Ticket, type TicketDocument } from './ticket.model.js';
+import {
+  TicketModel,
+  TICKET_TRANSITIONS,
+  type Ticket,
+  type TicketDocument,
+  type TicketStatus,
+} from './ticket.model.js';
 import { nextTicketNumber } from './counter.model.js';
 import { SOCKET_EVENTS, emitToOrg, emitToTicket } from '../../sockets/registry.js';
 import {
@@ -223,11 +229,19 @@ export async function assignTicket(
   return ticket;
 }
 
+// Only resolved or closed tickets may be deleted, so active work is never lost.
+const DELETABLE_STATUSES: TicketStatus[] = ['RESOLVED', 'CLOSED'];
+
 export async function deleteTicket(organizationId: string, ticketId: string): Promise<void> {
-  const result = await TicketModel.deleteOne({ _id: ticketId, organizationId });
-  if (result.deletedCount === 0) {
-    throw AppError.notFound('Ticket not found');
+  const ticket = await getTicket(organizationId, ticketId);
+  if (!DELETABLE_STATUSES.includes(ticket.status)) {
+    throw new AppError(
+      409,
+      'TICKET_NOT_DELETABLE',
+      'Only resolved or closed tickets can be deleted',
+    );
   }
+  await ticket.deleteOne();
   logger.info({ operation: 'tickets.delete', organizationId, ticketId }, 'Ticket deleted');
   emitToOrg(organizationId, SOCKET_EVENTS.TICKET_DELETED, { id: ticketId });
 }

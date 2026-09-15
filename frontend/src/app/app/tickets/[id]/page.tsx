@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { apiFetch, ApiError } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import { useSocket } from '@/lib/socket';
 import { relativeTime } from '@/lib/format';
 import { PriorityBadge, StatusBadge } from '@/components/Badge';
-import { ArrowLeftIcon, SendIcon } from '@/components/icons';
+import { ArrowLeftIcon, SendIcon, TrashIcon } from '@/components/icons';
 import type {
   Customer,
   Member,
@@ -23,6 +24,7 @@ const PRIORITIES: TicketPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 export default function TicketDetailPage() {
   const router = useRouter();
   const socket = useSocket();
+  const { user } = useAuth();
   const id = useParams().id as string;
 
   const [ticket, setTicket] = useState<Ticket | null>(null);
@@ -123,6 +125,17 @@ export default function TicketDetailPage() {
       body: { assignedAgentId: value || null },
     });
     setTicket(data.ticket);
+  }
+
+  async function deleteTicket() {
+    if (!window.confirm(`Delete ticket #${ticket?.number}? This cannot be undone.`)) return;
+    setMetaError(null);
+    try {
+      await apiFetch(`/api/tickets/${id}`, { method: 'DELETE' });
+      router.push('/app/tickets');
+    } catch (err) {
+      setMetaError(err instanceof ApiError ? err.message : 'Could not delete ticket.');
+    }
   }
 
   function authorName(m: Message): string {
@@ -263,6 +276,18 @@ export default function TicketDetailPage() {
               <span>{ticket.category || '-'}</span>
             </div>
           </div>
+
+          {(user?.role === 'ADMIN' || user?.role === 'MANAGER') &&
+            (ticket.status === 'RESOLVED' || ticket.status === 'CLOSED') && (
+              <div className="danger-zone">
+                <button className="btn btn-danger btn-block" onClick={deleteTicket}>
+                  <TrashIcon /> Delete ticket
+                </button>
+                <p className="danger-hint">
+                  Permanently removes this {ticket.status.toLowerCase()} ticket and its conversation.
+                </p>
+              </div>
+            )}
         </div>
       </div>
     </>

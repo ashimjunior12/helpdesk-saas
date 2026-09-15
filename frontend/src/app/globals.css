@@ -145,6 +145,27 @@ h4 {
 .btn-block {
   width: 100%;
 }
+.btn-danger {
+  background: transparent;
+  color: #dc2626;
+  border-color: color-mix(in srgb, #dc2626 35%, transparent);
+}
+.btn-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, #dc2626 10%, transparent);
+  border-color: color-mix(in srgb, #dc2626 55%, transparent);
+}
+
+.danger-zone {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.danger-hint {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
 
 /* ---------- Forms ---------- */
 .field {
